@@ -84,7 +84,7 @@ WSGI_APPLICATION = 'Prosfera_Setup.wsgi.application'
 # }
 
 DATABASES = {
-    'default' : dj_database_url(config('DATABASE_URL'))
+    'default' : dj_database_url.parse(config('DATABASE_URL'))
 }
 
 # Password validation
