@@ -20,7 +20,7 @@ class Sorte_Offrande(models.Model):
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     descript_recette = models.ForeignKey(Groupe_Offrandes, on_delete=models.CASCADE)
-    num_compte = models.IntegerField(max_length=15)
+    num_compte = models.IntegerField()
     nom_offrande = models.TextField(max_length=50)
     
     def __str__(self):
@@ -61,7 +61,7 @@ class Sorte_Prevision(models.Model):
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     descript_prevision = models.ForeignKey(Groupe_Previsions, on_delete=models.CASCADE)
-    num_compte = models.IntegerField(max_length=15)
+    num_compte = models.IntegerField()
     nom_prevision = models.TextField(max_length=50)
     
     def __str__(self):
@@ -71,8 +71,8 @@ class Prevoir(models.Model):
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     descript_prevision = models.ForeignKey(Sorte_Prevision, on_delete=models.CASCADE)
-    montant_prevus = models.IntegerField(max_length=15)
-    annee_prevus = models.IntegerField(max_length=8)
+    montant_prevus = models.IntegerField()
+    annee_prevus = models.IntegerField()
     
     def __str__(self):
         return self.descript_prevision
