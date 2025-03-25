@@ -289,7 +289,7 @@ def CreateSorteOffrande(request):
                 'message_erreur': message_erreur,
                 'groupe_offrandes' : groupe_offrandes
                 }
-            return render(request, 'sorte_offrandes/sorte_offrandes_2.html', context)
+            return render(request, 'sorte_offrandes/sorte_offrandes.html', context)
 
         
         # Création de l'enregistrement
