@@ -1,0 +1,113 @@
+{% extends 'index.html'%}
+{% block content %}
+{%load static%}   
+
+
+
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Table des groupes des previsions</h1>
+        
+    </div>
+
+    <p class="mb-4">Ce tableau contient la liste de toute les previsions faitent a l'eglise CBCA Katoyi </p>
+
+    <!-- DataTales Example -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Donnees</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Desciption</th>
+                            <th>Action</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in groupe_previsions %}
+                            
+                        <tr>
+                            <td>{{ i.num_ordre }}</td>
+                            <td>{{ i.description_prevision }}</td>
+
+                            
+                                
+                            <td>
+                                <div class="row">
+                                    <!-- Lien pour modifier, en s'assurant que l'URL de modification contient l'ID -->
+                                    <a class="nav-link" href="Modifier_PrevisionPage/{{i.id}}">
+                                        <i class="">Modifier</i>
+                                    </a>
+                                    <!-- Lien pour supprimer, en s'assurant que l'URL de suppression contient l'ID -->
+                                    <a class="nav-link" href="Supprimer_Groupe_Prevision/{{i.id}}">
+                                        <i class="small text-xs font-weight-bold text-danger">Supprimer</i>
+                                    </a>
+                                </div>
+                            </td>
+                            
+                        </tr>
+                       
+                        
+                    {% endfor %}
+                    </tbody>
+                    
+                </table>
+                {% if messages %}
+                    
+                        {% for message in messages %}
+                        &#x274C; <i class="small text-xs font-weight-normal text-danger" >{{message}}</i>
+                        {% endfor %}
+                    
+                {% endif %}
+                
+                <nav aria-label="Page navigation example">
+                <ul class="pagination justify-content-end">
+                    <li class="page-item ">
+                        {% if groupe_previsions.has_previous %}
+                                <a class="page-link" href="?page={{ groupe_previsions.previous_page_number }}">Précédent</a>
+                        {% endif %}
+                    </li>
+                    {% for num in groupe_previsions.paginator.page_range %}
+                        {% if groupe_previsions.number == num %}
+                          <!-- Page active -->
+                          <li class="page-item">
+                            
+                            <a class="page-link" href="#">{{ num }}</a>
+                        </li>
+                        {% else %}
+                          <!-- Page cliquable -->
+                          <li class="page-item">
+                            <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+                          </li>
+                        {% endif %}
+                      {% endfor %}
+
+                    <li class="page-item">
+                    
+                    {% if groupe_previsions.has_next %}
+                                        <a class="page-link" href="?page={{ groupe_previsions.next_page_number }}">Suivant</a>
+                                        
+                        {% endif %}
+                    </li>
+                </ul>
+                </nav>
+               
+            </div>
+        </div>
+    </div>
+
+
+
+   
+
+</div>
+
+
+{% endblock %}

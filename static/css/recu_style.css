@@ -1,0 +1,91 @@
+.Cadre_form {
+    Font-family : sans-serif ;
+    Width : 90% ; /* Utilisation de pourcentage pour la largeur */
+    Max-width : 600px ; /* Largeur maximale pour les grands écrans */
+    Margin : 20px auto ;
+    Border : 1px solid #ccc ;
+    Padding : 20px ;
+}
+.header {
+    Display : flex ;
+    Flex-direction : row ; /* Passage en colonne sur les petits écrans */
+    Align-items : center ;
+    Margin-bottom : 20px ;
+}
+.logo {
+    Width : 100px ;
+    Margin-bottom : 10px ; /* Espace sous le logo */
+}
+.details {
+    Display : grid ;
+    Grid-template-columns : 1fr ; /* Une seule colonne sur les petits écrans */
+    Gap : 10px ;
+    Margin-bottom : 20px ;
+}
+@media (min-width : 600px) { /* Passage à deux colonnes sur les écrans plus larges */
+    .details {
+        Grid-template-columns : 1fr 1fr ;
+    }
+}
+.details div {
+    Display : flex ;
+    Flex-direction : row ;
+   
+}
+.details p {
+    Font-weight : bold ;
+}
+.amount {
+    Display : flex ;
+    Justify-content : flex-end ;
+    Margin-bottom : 20px ;
+    margin-left: 15%;
+}
+.amount p {
+    Font-weight : bold ;
+    Margin-right : 10px ;
+}
+.amount input {
+    Width : 150px ;
+}
+.footer {
+    Display : flex ;
+    Flex-direction : column ; /* Passage en colonne sur les petits écrans */
+    Align-items : center ;
+}
+@media (min-width : 600px) { /* Retour à l’affichage en ligne sur les écrans plus larges */
+    .footer {
+        Flex-direction : row ;
+        Justify-content : space-between ;
+    }
+}
+.footer div {
+    Display : flex ;
+    Flex-direction : column ;
+    Text-align : center ; /* Centrage du texte */
+    Margin-top : 10px ; /* Espace entre les éléments */
+}
+
+.recu_num {
+    Display : flex ;
+    Flex-direction : column ;
+    Text-align : center ; /* Centrage du texte */
+    Margin-top : 10px ; /* Espace entre les éléments */
+    padding-bottom: 5%;
+}
+.recu_num label {
+    Font-weight : bold ;
+}
+.souligné-points {
+    display: inline-block;
+    position: relative;
+}
+
+.souligné-points:after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    border-bottom: 2px dotted black; /* Choisissez la couleur et l'épaisseur du pointillé */
+}
