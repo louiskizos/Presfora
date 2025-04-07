@@ -7,7 +7,7 @@
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <a class="nav-link" href="{% url 'app:Data_offrande' %}">
             <i class="fas fa-fw fa-database"></i>
-            <span>Payement</span></a>
+            <span>Voir les payements</span></a>
     </div>
     
     <!-- Outer Row -->
@@ -35,10 +35,6 @@
                                         <label for="" id="nnn" class="h5 text-gray-900 mb-4">Numero du compte : {{data.num_compte}}</label>
                                         
                                     </div>
-                                    <div class="text-center">
-                                        <label for="" id="nnn" class="h6 text-gray-900 mb-4">Nom du compte : {{data.nom_offrande}}</label>
-                                        
-                                    </div>
                                     <div class="form-group">
                                         <input type="text" class="form-control"
                                             id="exampleInputEmail" name="nom_offrande"
@@ -47,13 +43,25 @@
                                     <div class="form-group">
                                         <input type="text" class="form-control"
                                             id="exampleInputEmail" name="departement"
-                                            placeholder="Departement..." required>
+                                            placeholder="Nom..." required>
                                     </div>
                                     
                                     <div class="form-group">
                                         <input type="number" class="form-control"
                                             id="exampleInputEmail" name="montant"
                                             placeholder="Montant"  required>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="montant_lettre"
+                                            placeholder="Montant en lettre"  required>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="motif"
+                                            placeholder="Motif de payement"  required>
                                     </div>
                                     <div class="form-group">
                                         <input type="text" class="form-control"

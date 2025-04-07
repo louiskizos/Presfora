@@ -1,0 +1,89 @@
+
+{% extends 'index.html'%}
+{% block content %}
+{%load static%}   
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <a class="nav-link" href="">
+            <i class="fas fa-fw fa-download"></i>
+            <span>Telecharger un PDF</span></a>
+    </div>
+    
+    <!-- Outer Row -->
+    <div class="row justify-content-center">
+        
+        
+<div class="receipt">
+    <div class="logo-container">
+        
+        <div class="row">
+            <img src= "{% static 'img/logo.png' %}" alt= 'Logo CBCA' class= 'logo'>&nbsp;
+            
+            <div class="">
+                ECC/36<sup>eme</sup> C.B.C.A
+                <br>
+                Département : FINANCE
+                <br>
+                Institution : EGLISE CBCA/KATOYI
+                <br>
+                BP 495 GOMA
+            </div >
+            <div class="espace">
+                <p><strong>Date :</strong> {{data.date_sortie}}</p>
+            </div>
+            
+        </div>
+        
+    </div>
+    <h3>BON DE SORTIE DE CAISSE N° 0001/2025</h3>
+    <br>
+    <p><strong>Nom du bénéficiaire :</strong> {{data.nom_beneficiaire}}</p>
+    
+    <p><strong>Montant (en lettres) :</strong><small> {{data.montant_lettre}}</small></p>
+    
+    <p><strong>Motif du paiement :</strong><small> {{data.motif}}</small> </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>N° compte</th>
+                <th>Intitulé du compte, Dpt.Service</th>
+                <th>Montant</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{data.compte.nom_offrande.num_compte}} </td>
+                <td>{{data.compte.nom_offrande}} </td>
+                <td>{{data.montant}}</td>
+            </tr>
+            
+        </tbody>
+    </table>
+   
+        <div class="row">
+            
+            <p>Trésorier / RPS / RPP / EVARES / Comptable.Sce</p>&nbsp;
+            <div class="">
+                <p>Pour acqui</p>
+            
+            </div >
+            <div class="espace">
+                
+                <p>Caissier</p>
+            </div>
+            
+        </div>
+        
+    
+
+</div>
+
+    </div>
+
+</div>
+
+{% endblock %}                
+                              
+ 

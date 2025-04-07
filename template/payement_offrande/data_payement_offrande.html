@@ -12,7 +12,7 @@
         
     </div>
 
-    <p class="mb-4">Ce tableau contient la liste de toute les depenses faitent a l'eglise CBCA Katoyi </p>
+    <p class="mb-4">Ce tableau contient la liste de toute les payements faitent a l'eglise CBCA Katoyi </p>
 
     <!-- DataTales Example -->
     <div class="card shadow mb-4">
@@ -26,44 +26,30 @@
                         <tr>
                            <!-- <th>Numero d'ordre</th> -->
                             <th>Numero du compte</th>
-                            <th>Groupe des offrandes</th>
-                            <th>Nom de l'offrande</th>
-                            <th>Action</th>
+                            <th>Departement</th>
+                            <th>Nom d'offrande</th>
+                            <th>Montant</th>
+                            <th>Date de payement</th>
                             
                         </tr>
                     </thead>
                     <tbody>
                         {% for i in data %}
                         <tr>
-                            <td>{{ forloop.counter }}</td>  <!-- Affichage du numéro d'ordre dynamique -->
-                           <!-- <td>{{ i.num_compte }}</td> -->
-                            <td>{{ i.descript_recette }}</td>
+                    
+                            <td>{{ i.nom_offrande.num_compte }}</td>
+                            <td>{{ i.departement }}</td>
                             <td>{{ i.nom_offrande }}</td>
-                            <td>
-                                <div class="row">
-                                    <!-- Lien pour modifier l'élément -->
-                                    <a class="nav-link" href="">
-                                        <i class="small text-xs font-weight-bold text-primary">Modifier</i>
-                                    </a>
-                                    
-                                    <!-- Lien pour supprimer l'élément -->
-                                    <a class="nav-link" href="Supprimer_Sorte_Offrande/{{i.id}}">
-                                        <i class="small text-xs font-weight-bold text-danger">Supprimer</i>
-                                    </a>
-                                </div>
-                            </td>
+                            <td>{{ i.montant }}</td>
+                            <td>{{ i.date_payement }}</td>
+                            
                         </tr>
                         {% endfor %}
                     </tbody>
                     
    
                 </table>
-                {% if message_succes %}
-                                &#x2714; <i class="small text-xs font-weight-normal text-success" >{{message_succes}}</i>    
-                                {% endif %}
-                                {% if message_erreur %}
-                                &#x274C; <i class="small text-xs font-weight-normal text-danger" >{{message_erreur}}</i>
-                {% endif %} 
+                
                 <nav aria-label="Page navigation example">
                     <ul class="pagination justify-content-end">
                         <li class="page-item ">

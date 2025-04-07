@@ -7,13 +7,18 @@ from django.db.models import Sum
 from Prosfera_App.models import *
 from django.contrib.auth import login, update_session_auth_hash
 from django.core.paginator import Paginator
+from decimal import Decimal
 from django.contrib import messages
 from datetime import datetime
-
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .serializers import PayementOffrandeSerializer, PrevoirSerializer
 import re
+import io
+from django.http import FileResponse
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import landscape, A5
+from django.http import HttpResponse
 
 # Create your views here.
 
@@ -49,7 +54,9 @@ def logout(request):
 #Connexion session
 
 def connecterUser(request):
+    
     if request.method == 'POST':
+        
         email = request.POST.get('email')
         password = request.POST.get('password')
         
@@ -63,9 +70,11 @@ def connecterUser(request):
         if user and user.check_password(password):
             login(request, user)
             return redirect('app:Acceuil')
+        
         else:
             message_erreur = "Désolé, veuillez vérifier vos informations"
             return render(request, 'login/login.html', {'message_erreur': message_erreur})
+        
     return render(request, 'login/login.html')
 
 #Create user
@@ -160,6 +169,7 @@ def change_password(request):
         
 # fin fin
 
+############## ACCEUIL ###############################
 
 @login_required
 def homePage(request):
@@ -169,13 +179,22 @@ def homePage(request):
     if request.user.is_authenticated:
         
         soldes = Payement_Offrande.objects.aggregate(total = Sum('montant'))['total']
-        soldes = soldes if soldes is not None else 0
-        montant_prevu = Prevoir.objects.aggregate(total = Sum('montant_prevus'))['total']
-        montant_prevu = soldes if montant_prevu is not None else 0
+        soldes = soldes if soldes is not None else 0.0
         
+        depense = Depense.objects.aggregate(total = Sum('montant'))['total']
+        depense = depense if depense is not None else 0.0
+        reste = (soldes - depense)
+        montant_prevu = Prevoir.objects.aggregate(total = Sum('montant_prevus'))['total']
+        montant_prevu = soldes if montant_prevu is not None else 0.0
+        groupes_offrande_list = Groupe_Offrandes.objects.filter(user=request.user)
+    
+    # Récupérer le terme de recherche depuis la requête GET
+    
         context = {
-                'Soldes' : soldes,
+                'Soldes' : reste,
+                'Depense' : depense,
                 'Montant_prevu' : montant_prevu,
+                #'search_query': search_query
                 #'countTrans' : total_trans,
                 # 'pourcentage' : total_pourc
             }
@@ -185,7 +204,7 @@ def homePage(request):
     else:
         return redirect('app:login')
 
-
+############### SORTE DES OFFRANDES ########################
 @login_required
 def sorte_offrandePage(request):
     
@@ -233,10 +252,6 @@ def minenfantPage(request):
     
     page = 'minenfant.html'
     return render(request, page)
-
-### Fin
-
-### Insertion data
 
 
 def CreateSorteOffrande(request):
@@ -398,8 +413,7 @@ def dataOffrandePage(request):
 #### Fin
 
 
-########### Groupe des offrandes
-
+########### GROUPE DES OFFRANDES #########################
 @login_required
 def groupeOffrandePage(request):
     
@@ -516,7 +530,7 @@ def recherche_groupe_offrande(request):
     # Si un terme de recherche est fourni, on filtre les objets
     if search_query:
         groupes_offrande_list = groupes_offrande_list.filter(description_recette__icontains=search_query)
-    
+        
     # Pagination
     paginator = Paginator(groupes_offrande_list, 5)  # Afficher 10 éléments par page
     page_number = request.GET.get('page')
@@ -576,7 +590,7 @@ def Groupe_Data(request):
     return render(request, page, context)
 
 
-######################### Prevision #####################
+######################### GROUPE DES PREVISIONS #####################
 @login_required
 def groupe_previsonPage(request):
     
@@ -616,11 +630,11 @@ def CreateGroupe_Prevision(request):
         # Sauvegarde de l'enregistrement
         prevision.save()
         message_succes = "Enregistrement réussi avec succès !"
-        return render(request, 'pevision/groupe_prevision.html', {'message_succes': message_succes })
+        return render(request, 'prevision/groupe_prevision.html', {'message_succes': message_succes })
     
     else:
         message_erreur = "Échec d'enregistrement !"
-        return render(request, 'pevision/groupe_prevision.html', {'message_erreur': message_erreur})
+        return render(request, 'prevision/groupe_prevision.html', {'message_erreur': message_erreur})
 
 @login_required
 def Supprimmer_Groupe_Prevision(request, id):
@@ -674,10 +688,6 @@ def update_groupe_previsions(request, id):
     
     return render(request, page, context)
 
-
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect
-from .models import Groupe_Previsions
 
 @login_required
 def updateGroupePrevision(request, id):
@@ -860,17 +870,19 @@ def payementformulairePage(request, id):
     return render(request, page, context )
 
 
-from decimal import Decimal
-
 
 @login_required
 def payement(request):
+    
+    
     if request.method == 'POST':
         
         # Récupérer les valeurs envoyées par le formulaire
         nom_offrande_id = request.POST.get('nom_offrande')  # L'ID de la recette
         departement = request.POST.get('departement')
         montant = request.POST.get('montant')
+        montant_lettre = request.POST.get('montant_lettre')
+        motif = request.POST.get('motif')
         date_payement = request.POST.get('date_payement')
         annee = request.POST.get('annee')
         
@@ -912,6 +924,8 @@ def payement(request):
             nom_offrande=nom_offrande,  # Assigner l'objet Sorte_Offrande ici
             departement=departement,
             montant=montant,
+            montant_lettre=montant_lettre,
+            motif = motif,
             date_payement=date_payement,
             annee=annee
         )
@@ -949,13 +963,167 @@ def  Payement_Offrande_Data(request):
     # Rendre la page avec les données paginées et numérotées
     return render(request, 'payement_offrande/data_payement_offrande.html', context)
 
+############# DEPENSE ####################
 
-
-
-def recuPage(request):
+def depensePage(request):
     
-    page = 'rapport/de.html'
-    return render(request, page )
+    current_date = datetime.now()
+    formatted_date = current_date.strftime('%d-%m-%Y')
+    formatted_anne = current_date.strftime('%Y')
+    data = Payement_Offrande.objects.all()[:2]
+    #data = Payement_Offrande.objects.aggregate(total = Sum('montant'))['total']
+    
+    context = {
+        'data' : data,
+        'date_sortie' : formatted_date,
+        'annee_sortie' : formatted_anne,
+        }
+    page = 'depense/formulaire_depense.html'
+    return render(request, page, context )
+
+@login_required
+def depenser(request):
+    
+    
+    if request.method == 'POST':
+        
+       
+        compte_id = request.POST.get('compte') 
+        nom_beneficiaire = request.POST.get('nom_beneficiaire')
+        montant = request.POST.get('montant')
+        montant_lettre = request.POST.get('montant_lettre')
+        motif = request.POST.get('motif')
+        date_sortie = request.POST.get('date_sortie')
+        annee = request.POST.get('annee')
+        
+        soldes = Payement_Offrande.objects.aggregate(total = Sum('montant'))['total']
+
+        # Validation des données
+        try:
+            # Vérifier si l'ID de la recette existe dans la base de données
+            compte = Payement_Offrande.objects.get(id=compte_id)
+            
+        except Payement_Offrande.DoesNotExist:
+            message_erreur = "Le compte spécifié n'existe pas."
+            context = {'message_erreur': message_erreur}
+            return render(request, 'depense/formulaire_depense.html', context)
+        
+        # Vérification du montant (doit être un nombre décimal)
+        try:
+            montant = Decimal(montant)
+        except (ValueError,):
+            message_erreur = "Le montant n'est pas valide."
+            context = {'message_erreur': message_erreur}
+            return render(request, 'depense/formulaire_depense.html', context)
+        
+        # Vérification de l'année (doit être un entier)
+        try:
+            annee = int(annee)
+        except ValueError:
+            message_erreur = "L'année n'est pas valide."
+            context = {'message_erreur': message_erreur}
+            return render(request, 'depense/formulaire_depense.html', context)
+        
+        # Vérifier la date de sortie (assurez-vous qu'elle est dans un format valide)
+        try:
+            date_sortie = datetime.strptime(date_sortie, '%d-%m-%Y').date()
+        except ValueError:
+            message_erreur = "La date de sortie n'est pas valide."
+            context = {'message_erreur': message_erreur}
+            return render(request, 'depense/formulaire_depense.html', context)
+        
+        if soldes < montant:
+            message_erreur = "Compte insuffisant !"
+            context = {'message_erreur': message_erreur}
+            return render(request, 'depense/formulaire_depense.html', context)
+            
+        # Création de l'enregistrement
+        depenser = Depense(
+            compte=compte,  # Assigner l'objet Sorte_Offrande ici
+            nom_beneficiaire=nom_beneficiaire,
+            montant=montant,
+            montant_lettre=montant_lettre,
+            motif = motif,
+            date_sortie=date_sortie,
+            annee=annee
+        )
+        
+        # Sauvegarde de l'enregistrement
+        depenser.save()
+        message_succes = "Sortie réussie avec succès !"
+        context = {'message_succes': message_succes}
+        return render(request, 'depense/formulaire_depense.html', context)
+    
+    else:
+        message_erreur = "Échec de la sortie !"
+        return render(request, 'depense/formulaire_depense.html', {'message_erreur': message_erreur})
+
+@login_required
+def  Depense_Data(request): 
+
+    # Récupération des objets Sorte_Offrande
+    data = Depense.objects.all()
+
+    # Paginer les objets (5 éléments par page)
+    paginator = Paginator(data, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Calculer un numéro d'ordre dynamique pour chaque objet sur la page
+    for index, objet in enumerate(page_obj, start=1):  # `start=1` commence l'index à 1
+        objet.numero_ordre = index  # Assigner le numéro d'ordre à chaque objet
+
+    # Passer les objets à la template
+    context = {
+        'data': page_obj
+    }
+
+    # Rendre la page avec les données paginées et numérotées
+    return render(request, 'depense/data_depense.html', context)
+
+
+
+
+def bonSortiePage(request, id):
+    
+    data = Depense.objects.get(id=id)
+    
+    context = {'data' : data}
+    page = 'rapport/bon_sortie.html'
+    return render(request, page, context )
+
+
+def recuPage(request, id):
+    
+    data = Payement_Offrande.objects.get(id=id)
+    
+    context = {'data' : data}
+    page = 'rapport/recu.html'
+    return render(request, page, context )
+
+def recu_dataPage(request):
+        # Récupération des objets Sorte_Offrande
+    data = Payement_Offrande.objects.all()
+
+    # Paginer les objets (5 éléments par page)
+    paginator = Paginator(data, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Calculer un numéro d'ordre dynamique pour chaque objet sur la page
+    for index, objet in enumerate(page_obj, start=1):  # `start=1` commence l'index à 1
+        objet.numero_ordre = index  # Assigner le numéro d'ordre à chaque objet
+
+    # Passer les objets à la template
+    context = {
+        'data': page_obj
+    }
+
+    page = 'rapport/recu_data.html'
+    return render(request, page, context )
+
+
+#################### RAPPORT PDF ##########################
 
 
 def custom_404(request, exception):
@@ -967,37 +1135,235 @@ def custom_404(request, exception):
 
 @api_view(['GET'])
 def get_presfora_data(request):
+    
     # Obtenez les paiements par année
     payements = Payement_Offrande.objects.values('annee').annotate(total_payement=Sum('montant')).order_by('annee')
     previsions = Prevoir.objects.values('annee_prevus').annotate(total_prevision=Sum('montant_prevus')).order_by('annee_prevus')
-
+    depenses = Depense.objects.values('annee').annotate(total_depense=Sum('montant')).order_by('annee')
     # Sérialiser les données de Payement_Offrande
     payements_data = [{"annee": p['annee'], "total_payement": p['total_payement']} for p in payements]
     
+    annees = Payement_Offrande.objects.values('annee').order_by('annee')
+    
+    depenses_data = [{"annee": p['annee'], "total_depense": p['total_depense']} for p in depenses]
     # Sérialiser les données de Prevoir
     previsions_data = [{"annee_prevus": p['annee_prevus'], "total_prevision": p['total_prevision']} for p in previsions]
     
     # Préparer les données à envoyer au frontend
-    labels = list(set([p['annee'] for p in payements] + [p['annee_prevus'] for p in previsions]))
+    labels = list(set([p['annee'] for p in payements] + [p['annee'] for p in annees] + [p['annee'] for p in depenses] + [p['annee_prevus'] for p in previsions]))
     labels.sort()
-
     # Format des données pour le graphique
+    
+    
+    
+    
+    
     data = {
-        'labels': ["2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"],
+        #'labels': ["2014", "2015", "2016", ],
+        'labels' : [next((item['annee'] for item in annees if item['annee'] == label), 0) for label in labels],
         'datasets': [
+            
             {
-                'label': 'Total Payement',
+                'label': "Solde total",
+                'lineTension': 0.3,
+                'backgroundColor': "rgba(78, 115, 223, 0.05)",
+                'borderColor': "rgba(78, 115, 223, 1)",
+                'pointRadius': 3,
+                'pointBackgroundColor': "rgba(78, 115, 223, 1)",
+                'pointBorderColor': "rgba(78, 115, 223, 1)",
+                'pointHoverRadius': 3,
+                'pointHoverBackgroundColor': "rgba(78, 115, 223, 1)",
+                'pointHoverBorderColor': "rgba(78, 115, 223, 1)",
+                'pointHitRadius': 10,
+                'pointBorderWidth': 2,
+                #'data': [0, 10000, 5000, 15000, 10000, 20000, 15000, 25000, 20000, 30000, 25000, 40000],
                 'data': [next((item['total_payement'] for item in payements_data if item['annee'] == label), 0) for label in labels],
-                'borderColor': 'rgba(78, 115, 223, 1)',
-                'backgroundColor': 'rgba(78, 115, 223, 0.05)',
             },
             {
-                'label': 'Total Prevision',
+                'label': "Depense total",
+                'lineTension': 0.3,
+                'backgroundColor': "rgba(78, 115, 223, 0.05)",
+                'borderColor': "rgb(211, 16, 81)",
+                'pointRadius': 3,
+                'pointBackgroundColor': "rgb(211, 16, 81)",
+                'pointBorderColor': "rgb(211, 16, 81)",
+                'pointHoverRadius': 3,
+                'pointHoverBackgroundColor': "rgb(211, 16, 81)",
+                'pointHoverBorderColor': "rgb(211, 16, 81)",
+                'pointHitRadius': 10,
+                'pointBorderWidth': 2,
+                #'data': [0, 1000, 500, 1000, 1000, 2000, 0, 5000, 20000, 30000, 25000, 40000],
+                'data': [next((item['total_depense'] for item in depenses_data if item['annee'] == label), 0) for label in labels],    
+            }, 
+            {
+                'label': "Prevision total",
+                'lineTension': 0.3,
+                'backgroundColor': "rgba(78, 115, 223, 0.05)",
+                'borderColor' : "#858796",
+                'pointRadius': 3,
+                'pointBackgroundColor': "#858796",
+                'pointBorderColor': "#858796",
+                'pointHoverRadius': 3,
+                'pointHoverBackgroundColor': "#858796",
+                'pointHoverBorderColor': "#858796",
+                'pointHitRadius': 10,
+                'pointBorderWidth': 2,
+                #'data': [0, 1000, 500, 1000, 1000, 20000, 15000, 25000, 20000, 30000, 25000, 0]
                 'data': [next((item['total_prevision'] for item in previsions_data if item['annee_prevus'] == label), 0) for label in labels],
-                'borderColor': 'rgba(211, 16, 81, 1)',
-                'backgroundColor': 'rgba(211, 16, 81, 0.05)',
-            }
+            },
         ]
     }
 
     return Response(data)
+
+
+################## PDF #########################
+
+def recu_pdf(request, id):
+    
+    try:
+        data = Payement_Offrande.objects.get(id=id)
+    except Payement_Offrande.DoesNotExist:
+        return HttpResponse("Payement_Offrande ne pas la", status=404)  # Gestion de l'erreur si l'objet n'existe pas
+
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=landscape(A5))
+    width, height = landscape(A5)
+
+    # Ajout du logo (assurez-vous que le chemin est correct)
+    logo_path = "static/img/logo.png"
+    try:
+        p.drawImage(logo_path, 50, height - 80, width=60, height=60, mask='auto')
+    except Exception as e:
+        print(f"Error loading logo: {e}") #gestion d'erreur si le logo n'est pas trouvé.
+
+    # Informations générales
+    p.setFont("Helvetica", 12)
+    p.drawString(130, height - 30, "ECC/36ème C.B.C.A")
+    p.drawString(130, height - 50, "Département : FINANCE")  # Assurez-vous que c'est correct
+    p.drawString(130, height - 70, "Institution : BP 495 GOMA")
+
+    # Montant en haut à droite
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(width - 150, height - 50, f"{data.montant}$")
+
+    # Titre du reçu (générer un numéro de reçu unique)
+    receipt_number = f"0001/{datetime.now().year}"  # Exemple de numéro de reçu
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(220, height - 130, f"REÇU N° {receipt_number}")
+
+    # Détails du reçu
+    p.setFont("Helvetica", 12)
+    p.drawString(50, height - 170, f"Reçu de : Louis")  # Assurez-vous que c'est correct
+    p.drawString(50, height - 190, f"Montant (en lettres) : {convert_amount_to_words(data.montant)} $") #fonction à créer pour convertir le montant en lettres.
+    p.drawString(50, height - 210, f"Motif du paiement : {data.motif}")
+
+    # Section Caisse
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(50, height - 250, "La caisse")
+
+    # Date et validation centrées
+    p.setFont("Helvetica", 12)
+    date_text = f"Date : {data.date_payement}"
+    pour_versement_text = "Pour versement"
+    date_x = width - 180
+    pour_versement_x = date_x + (len(date_text) - len(pour_versement_text)) * 2  # Ajustement pour centrage
+
+    p.drawString(date_x, height - 250, date_text)
+    p.drawString(pour_versement_x, height - 270, pour_versement_text)
+
+    p.showPage()
+    p.save()
+
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename=f"recu de {data.departement}.pdf")
+
+def convert_amount_to_words(amount):
+    # Fonction à implémenter pour convertir le montant en lettres
+    # Exemple simple (à adapter pour une gestion complète)
+    return "Dix" if amount == 10 else "Montant non géré"
+
+
+def bon_sorti_pdf(request, id):
+    
+    try:
+        data = Depense.objects.get(id=id)
+    except Depense.DoesNotExist:
+        return HttpResponse("Pas de donnee sur les penses", status=404)  # Gestion de l'erreur si l'objet n'existe pas
+
+    
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=landscape(A5))
+    width, height = landscape(A5)
+    
+    # Ajout du logo avec fond opaque
+    logo_path = "static/img/logo.png"  # Remplacez par le chemin de votre logo
+    p.drawImage(logo_path, 50, height - 80, width=60, height=60, mask='auto')
+    
+    # Informations générales (montées légèrement)
+    p.setFont("Helvetica", 12)
+    p.drawString(120, height - 30, "ECC/36ème C.B.C.A")
+    p.drawString(120, height - 50, "Département : FINANCE")
+    p.drawString(120, height - 70, "Institution : EGLISE CBCA/KATOYI")
+    p.drawString(120, height - 90, "BP : 495 GOMA")
+    # Montant en haut à droite
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(width - 160, height - 50, f"Date : {data.date_sortie}")
+    
+    # Titre du reçu
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(width / 2 - 150, height - 120, "BON DE SORTIE DE CAISSE N° 0001/2025")
+    
+    # Détails du reçu
+    p.setFont("Helvetica", 12)
+    p.drawString(50, height - 150, f"Nom de beneficiaire : {data.nom_beneficiaire}")
+    p.drawString(50, height - 170, f"Montant (en lettres) : {data.montant_lettre}")
+    p.drawString(50, height - 190, f"Motif du paiement : {data.motif}")
+    
+    # Tableau 3x3
+    # 3x3 Tableau (on dessine d'abord les lignes, puis on les remplit avec des textes)
+    x_start = 50
+    y_start = height - 220
+    cell_width = 150
+    cell_height = 20
+
+# Dessiner les lignes du tableau
+    for i in range(4):  # 4 lignes (inclut la ligne du bas)
+        p.line(x_start, y_start - i * cell_height, x_start + 3 * cell_width, y_start - i * cell_height)
+
+    for j in range(4):  # 4 colonnes (inclut la colonne de droite)
+        p.line(x_start + j * cell_width, y_start, x_start + j * cell_width, y_start - 3 * cell_height)
+
+# Remplir le tableau avec des données (par exemple des informations sur les transactions)
+    p.setFont("Helvetica", 10)
+
+# Ligne 1 (Titres des colonnes)
+    p.drawString(x_start + 10, y_start - 10, "Numero du compte")
+    p.drawString(x_start + cell_width + 10, y_start - 10, "Description")
+    p.drawString(x_start + 2 * cell_width + 10, y_start - 10, "Montant")
+
+# Ligne 2
+    p.drawString(x_start + 10, y_start - 30, f"{data.compte.nom_offrande.num_compte}")
+    p.drawString(x_start + cell_width + 10, y_start - 30, f"{data.compte.nom_offrande}")
+    p.drawString(x_start + 2 * cell_width + 10, y_start - 30, f"{data.montant}")
+
+    
+    # Section Caisse
+    p.setFont("Helvetica", 12)
+    p.drawString(50, height - 310, "Tresorier/ RPS/EVARES/ Comptable.Sce")
+    
+    p.setFont("Helvetica", 12)
+    p.drawString(320, height - 310, 'Pour acquit')
+    
+    # Date et validation centrées
+    p.setFont("Helvetica", 12)
+    date_text = f"Caissier"
+    date_x = width - 120   
+    p.drawString(date_x, height - 310, date_text)
+   
+    
+    p.showPage()
+    p.save()
+    
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename=f"Bon de sorti de {data.nom_beneficiaire}.pdf")

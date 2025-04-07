@@ -52,10 +52,24 @@ urlpatterns = [
     path('Payement', payement, name='Payement'),
     path('Payement_Offrande_Data',Payement_Offrande_Data, name='Payement_Offrande_Data'),
     
+    ################ Depense   #########################
+    path('Depense', depensePage, name='Depense'),
+    path('Depenser', depenser, name='Depenser'),
+    path('Depense_data', Depense_Data, name='Depense_data'),
     
+    
+    ############## Recu #########################
+    path('Recu/<uuid:id>/', recuPage, name='Recu'),
+    path('Recu_data', recu_dataPage, name='Recu_data'),
+    path('Bon_Sortie/<uuid:id>/', bonSortiePage, name='Bon_Sortie'),
+    
+    ############# Rapport PDF #####################
+    path('Recu_pdf/<uuid:id>/', recu_pdf, name='Recu_pdf'),
+    
+    path('Bon_sorti_pdf/<uuid:id>/', bon_sorti_pdf, name='generate_sorti_pdf'),
     
     path('test', Pagination_Search_Groupe_Offrande, name='test'),
-    path('Recu', Pagination_Search_Groupe_Offrande, name='Recu'),
+    
     #################### DATA API #######################
     path('api/presfora-data/', views.get_presfora_data, name='get_presfora_data'),
     

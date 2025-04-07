@@ -1,0 +1,70 @@
+{% extends 'index.html'%}
+{% block content %}
+{%load static%}   
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <a class="nav-link" href="Recu/{{data.id}}/Recu_pdf/{{data.id}}">
+            <i class="fas fa-fw fa-download"></i>
+            <span>Telecharger un PDF</span></a>
+    </div>
+    
+    <!-- Outer Row -->
+    <div class="row justify-content-center">
+        <div class="container">
+    
+            <div class="receipt">
+                <div class="logo-container">
+                    
+                    <div class="row">
+                        <img src= "{% static 'img/logo.png' %}" alt= 'Logo CBCA' class= 'logo'>&nbsp;
+                        
+                        <div class="">
+                            ECC/36<sup>eme</sup> C.B.C.A
+                            <br>
+                            Département : FINANCE
+                            <br>
+                            Institution : EGLISE/KATOYI
+                            <br>
+                            BP 495 GOMA
+                        </div >
+                        <div class="espace">
+                            <p><strong>Montant : {{data.montant}}$</strong></p>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <h3>REÇU N° 0001/{{data.annee}}</h3>
+                
+                <p><strong>Recu de :</strong> {{data.departement}}</p>
+                <p><strong>Montant (en lettres) :</strong><small> {{data.montant_lettre}}</small></p>
+                <br>
+                <p><strong>Motif du paiement :</strong> {{data.motif}}</p>
+        
+                    <div class="row">
+                        
+                        <p></p>&nbsp;
+                        <div class="">
+                            <p><strong>La caisse</strong></p>
+                        
+                        </div >
+                        <div class="espace">
+                            
+                            <p><strong>Date :</strong> {{data.date_payement}}</p>
+                            <p><strong>Pour versement</strong></p>
+                        </div>
+                        
+                    </div>
+                    
+                
+            
+            </div>
+        </div>
+    </div>
+        
+</div>
+
+{% endblock %}                
+                              
+ 

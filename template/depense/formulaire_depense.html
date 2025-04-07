@@ -1,0 +1,107 @@
+
+{% extends 'index.html'%}
+{% block content %}
+{%load static%}   
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <a class="nav-link" href="{% url 'app:Depense_data'%}">
+            <i class="fas fa-fw fa-database"></i>
+            <span>Voir les depenses</span></a>
+    </div>
+    
+    <!-- Outer Row -->
+    <div class="row justify-content-center">
+        
+        <div class="col-xl-10 col-lg-12 col-md-9">
+
+            <div class="card o-hidden border-0 shadow-lg my-5">
+                <div class="card-body p-0">
+                    
+                    <!-- Nested Row within Card Body -->
+                    <div class="row">
+                        <div class="col-lg-3 d-none d-lg-block bg-login-image">
+                    
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="p-5">
+                                <div class="text-center">
+                                    <h1 class="h4 text-gray-900 mb-4">Sortie de caisse</h1>
+                                    
+                                </div>
+                                <form class="user" method="post" action="{% url 'app:Depenser' %}">
+                                    {% csrf_token %}
+                                    
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="nom_beneficiaire"
+                                            placeholder="Nom du beneficiaire..." required>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <input type="number" class="form-control"
+                                            id="exampleInputEmail" name="montant"
+                                            placeholder="Montant"  required>
+                                    </div>
+                                    <div class="form-group">
+                                        <select type="text" class="form-control form-control-select" name="compte" id="compte">
+                                            {% for data in data %}
+                                                <option value="{{data.id}}">{{data.nom_offrande}} {{data.montant}}$</option>
+                                            {% empty %}
+                                                <option value="#">Pas de données</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="montant_lettre"
+                                            placeholder="Montant en lettre"  required>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="motif"
+                                            placeholder="Motif de payement"  required>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="date_sortie"
+                                            placeholder="date..." value="{{date_sortie}}" hidden required>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="annee"
+                                            placeholder="Annee..." value="{{annee_sortie}}" hidden required>
+                                    </div>
+                                    
+                                    
+                                    <div class="single-form">
+                                        <button class="btn btn-primary btn-block" type="submit">Decaisser</button>
+                                    </div>
+                                    
+                               </form>
+                               <hr>
+                               <div class="text-center">
+                                {% if message_succes %}
+                                &#x2714; <i class="small text-xs font-weight-normal text-success" >{{message_succes}}</i>    
+                                {% endif %}
+                                {% if message_erreur %}
+                                &#x274C; <i class="small text-xs font-weight-normal text-danger" >{{message_erreur}}</i>
+                                {% endif %}  
+                                   
+                               </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

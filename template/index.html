@@ -112,10 +112,9 @@
                     <div class="bg-white py-2 collapse-inner rounded">
                         <h6 class="collapse-header">Details:</h6>
                         
-                        <a class="collapse-item" href="">Sorte 1</a>
-                        <a class="nav-link" href="{% url 'app:Payement_Offrande' %}">
-                            <i class="fas fa-fw fa-chart-area"></i>
-                            <span>Payement des offrandes</span></a>
+                        <a class="collapse-item" href="{% url 'app:Payement_Offrande' %}">Payement des offrandes</a>
+                        
+                        <a class="collapse-item" href="{% url 'app:Recu_data' %}">Recu</a>
                                                                         
                     </div>
                 </div>
@@ -124,16 +123,16 @@
                 <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUtilities"
                     aria-expanded="true" aria-controls="collapseUtilities">
                     <i class="fas fa-fw fa-wrench"></i>
-                    <span>Sortes des offrandes</span>
+                    <span>Depenses</span>
                 </a>
                 <div id="collapseUtilities" class="collapse" aria-labelledby="headingUtilities"
                     data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <h6 class="collapse-header">Sorte des Offrandes :</h6>
-                        <a class="collapse-item" href="">Sorte 6</a>
+                        <h6 class="collapse-header">Details :</h6>
+                        <a class="collapse-item" href="{% url 'app:Depense' %}">depense</a>
                         
                         
-                        <a class="collapse-item" href="{% url 'app:Recu' %}">Recu</a>
+                        <a class="collapse-item" href="{% url 'app:Depense_data'%}">Bon de sortie</a>
                     </div>
                 </div>
             </li>
@@ -158,6 +157,26 @@
                 <a class="nav-link" href="{% url 'app:Groupe_Prevision' %}">
                     <i class="fas fa-fw fa-chart-area"></i>
                     <span>Groupe des prevision</span></a>
+            </li>
+            {% endif %}
+
+            {% if user.username == "Caissiere" or user.username == "caissiere" or user.username == "Caissier" or user.username == "caissier" %}
+            <li class="nav-item">
+                <a class="nav-link"  href="{% url 'app:Payement_Offrande_Data'%}">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>Liste des payements</span></a>
+                    
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'app:Depense_data'%}">
+                    <i class="fas fa-fw fa-chart-area"></i>
+                    <span>Liste des depenses</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link"  href="">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>Livre de caisse</span></a>
+                    
             </li>
             {% endif %}
             <!-- Divider -->
@@ -188,7 +207,7 @@
                     </button>
 
                     <!-- Topbar Search -->
-                    <form action="{% url 'app:Groupe_offrande_data'%}" 
+                    <form action="{% url 'app:test'%}" 
                         class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
                         <div class="input-group">
                             <input  type="text" name="q" class="form-control bg-light border-0 small" placeholder="Recherche..."
@@ -383,13 +402,13 @@
 
                 </nav>
                 <!-- End of Topbar -->
-
+                {% if user.username == "Caissiere" or user.username == "caissiere" or user.username == "Caissier" or user.username == "caissier" or user.username == "Comptable" or user.username == "comptable" %}
                 <!-- Begin Page Content -->
-               {% block content %}
+                    {% block content %}
     
-               {% endblock content %}
-                <!-- /.container-fluid -->
-
+                    {% endblock content %}
+                
+               {% endif %}
             </div>
             <!-- End of Main Content -->
 
@@ -397,7 +416,7 @@
             <footer class="sticky-footer bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; Prosfera 2025</span>
+                        <span>Copyright &copy; Prosphora 2025</span>
                     </div>
                 </div>
             </footer>
@@ -405,7 +424,6 @@
 
         </div>
         <!-- End of Content Wrapper -->
-
     </div>
     <!-- End of Page Wrapper -->
 
@@ -427,8 +445,8 @@
                 </div>
                 <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    <a class="btn btn-primary" href="login.html">Logout</a>
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Quitter</button>
+                    <a class="btn btn-primary" href="login.html">se deconnecter</a>
                 </div>
             </div>
         </div>

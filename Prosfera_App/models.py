@@ -33,19 +33,23 @@ class Payement_Offrande(models.Model):
     nom_offrande = models.ForeignKey(Sorte_Offrande, on_delete=models.CASCADE)
     departement = models.CharField(max_length=100)
     montant = models.DecimalField(max_digits=15, decimal_places=2)
+    montant_lettre = models.CharField(max_length=255)
+    motif = models.CharField(max_length=255)
     date_payement = models.DateField()
     annee = models.IntegerField()
     
     
-
-class CompteArgent(models.Model) :
+class Depense(models.Model):
     
-    nom = models.CharField(max_length=100)
-    solde = models.DecimalField(max_digits=10, decimal_places=2)
-
-    def __str__(self) :
-        return self.nom
-
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    compte = models.ForeignKey(Payement_Offrande, on_delete=models.CASCADE)
+    nom_beneficiaire = models.CharField(max_length=100)
+    montant = models.DecimalField(max_digits=15, decimal_places=2)
+    montant_lettre = models.CharField(max_length=255)
+    motif = models.CharField(max_length=255)
+    date_sortie = models.DateField()
+    annee = models.IntegerField()
+ 
 class Groupe_Previsions(models.Model):
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -57,20 +61,22 @@ class Groupe_Previsions(models.Model):
         return self.description_prevision
 
 
-class Sorte_Prevision(models.Model):
+# class Sorte_Prevision(models.Model):
     
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    descript_prevision = models.ForeignKey(Groupe_Previsions, on_delete=models.CASCADE)
-    num_compte = models.BigIntegerField()
-    nom_prevision = models.TextField(max_length=50)
+#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+#     descript_prevision = models.ForeignKey(Groupe_Previsions, on_delete=models.CASCADE)
+#     num_compte = models.BigIntegerField()
+#     nom_prevision = models.TextField(max_length=50)
     
-    def __str__(self):
-        return self.nom_prevision
+#     def __str__(self):
+#         return self.nom_prevision
     
 class Prevoir(models.Model):
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    descript_prevision = models.ForeignKey(Sorte_Prevision, on_delete=models.CASCADE)
+    num_compte = models.BigIntegerField()
+    descript_prevision = models.ForeignKey(Groupe_Offrandes, on_delete=models.CASCADE)
+    nom_prevision = models.TextField(max_length=50)
     montant_prevus = models.DecimalField(max_digits=15, decimal_places=2)
     annee_prevus = models.IntegerField()
     
