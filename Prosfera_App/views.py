@@ -1633,10 +1633,29 @@ def recu_pdf(request,pdf_id):
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename=f"recu de {data.departement}.pdf")
 
-def convert_amount_to_words(amount):
-    # Fonction à implémenter pour convertir le montant en lettres
-    # Exemple simple (à adapter pour une gestion complète)
-    return "Dix" if amount == 10 else "Montant non géré"
+
+@login_required
+def  bilan(request): 
+
+    # Récupération des objets Sorte_Offrande
+    data = Ahadi.objects.all()
+
+    # Paginer les objets (5 éléments par page)
+    paginator = Paginator(data, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Calculer un numéro d'ordre dynamique pour chaque objet sur la page
+    for index, objet in enumerate(page_obj, start=1):  # `start=1` commence l'index à 1
+        objet.numero_ordre = index  # Assigner le numéro d'ordre à chaque objet
+
+    # Passer les objets à la template
+    context = {
+        'data': page_obj
+    }
+
+    # Rendre la page avec les données paginées et numérotées
+    return render(request, 'rapport/bilan.html', context)
 
 
 

@@ -75,7 +75,7 @@ urlpatterns = [
     path('Recu/<uuid:id>/', recuPage, name='Recu'),
     path('Recu_data', recu_dataPage, name='Recu_data'),
     path('Bon_Sortie/<str:nom>/', bonSortiePage, name='Bon_Sortie'),
-    
+    path('Bilan', bilan, name='Bilan'),
     ############# Rapport PDF #####################
     path('Recu_pdf/<uuid:pdf_id>/', recu_pdf, name='Recu_pdf'),
     path('Bon_sorti_pdf/<uuid:pdf_id>/', bon_sorti_pdf, name='generate_sorti_pdf'),

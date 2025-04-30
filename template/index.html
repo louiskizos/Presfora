@@ -176,6 +176,12 @@
             <!-- Nav Item - Tables -->
             {% if user.username == "Comptable" or user.username == "comptable" %}
             <li class="nav-item">
+                <a class="nav-link" href="{% url 'app:Bilan' %}">
+                    <i class="fas fa-fw fa-chart-area"></i>
+                    <span>Bilan</span></a>
+            </li>
+
+            <li class="nav-item">
                 <a class="nav-link"  href="{% url 'app:Groupe_Offrandes' %}">
                     <i class="fas fa-fw fa-table"></i>
                     <span>Groupe des offrandes</span></a>
