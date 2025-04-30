@@ -11,3 +11,5 @@ from django.test import TestCase
 # Poussez votre projet vers GitHub : git push -u origin main
 
 ######## git branch -m master main 
+
+##### git push -u master

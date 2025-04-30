@@ -21,7 +21,7 @@
             <img src= "{% static 'img/logo.png' %}" alt= 'Logo CBCA' class= 'logo'>&nbsp;
             
             <div class="">
-                ECC/36<sup>eme</sup> C.B.C.A
+                ECC/3<sup>eme</sup> C.B.C.A
                 <br>
                 Département : FINANCE
                 <br>
@@ -30,7 +30,10 @@
                 BP 495 GOMA
             </div >
             <div class="espace">
-                <p><strong>Date :</strong> {{data.date_sortie}}</p>
+                <p><strong>Date :</strong>{% for data in data %}
+                    {{data.date_sortie}}
+                    {% endfor %}
+                    </p>
             </div>
             
         </div>
@@ -38,7 +41,11 @@
     </div>
     <h3>BON DE SORTIE DE CAISSE N° 0001/2025</h3>
     <br>
-    <p><strong>Nom du bénéficiaire :</strong> {{data.nom_beneficiaire}}</p>
+    <p><strong>Nom du bénéficiaire :</strong>{% for data in data %}
+        {{data.nom_beneficiaire}}
+        {{data.motif}}
+        {% endfor %}
+    </p>
     
     <p><strong>Montant (en lettres) :</strong><small> {{data.montant_lettre}}</small></p>
     
@@ -53,12 +60,13 @@
             </tr>
         </thead>
         <tbody>
+            {% for data in data_compte %}
             <tr>
-                <td>{{data.compte.nom_offrande.num_compte}} </td>
-                <td>{{data.compte.nom_offrande}} </td>
-                <td>{{data.montant}}</td>
+                <td>{{data.compte}} </td>
+                <td>{{data.nom_compte}} </td>
+                <td>{{data.montant_total}} $</td>
             </tr>
-            
+         {% endfor %}
         </tbody>
     </table>
    

@@ -25,31 +25,37 @@
                     <thead>
                         <tr>
                            <!-- <th>Numero d'ordre</th> -->
-                            <th>Numero du compte</th>
-                            <th>Nom du compte</th>
+                    
                             <th>Nom du beneficiaire</th>
                             <th>Montant</th>
+                            <th>Motif</th>
                             <th>Date de sortie</th>
-                            <th>Actions</th>
+                            <th>Voir</th>
+                            <th>Imprimer</th>
                             
                         </tr>
                     </thead>
                     <tbody>
                         {% for i in data %}
                         <tr>
-                            <td>{{ i.compte.nom_offrande.num_compte }}</td>                    
-                            <td>{{ i.compte.nom_offrande }}</td>
-                            <td>{{ i.nom_beneficiaire }}</td>
-                            <td>{{ i.montant }}$</td>
                             
+                            <td>{{ i.nom_beneficiaire }}</td>
+                            <td>{{ i.montant_total }}$</td>
+                            <td>{{ i.motif }}</td>
+                          
                             <td>{{ i.date_sortie }}</td>
                             <td>
                                 <div class="row">
                                     <!-- Lien pour modifier, en s'assurant que l'URL de modification contient l'ID -->
-                                    <a class="nav-link" href="Bon_Sortie/{{i.id}}">
-                                        <i class="">Bon de sortie</i>
+                                    <a class="nav-link" href="Bon_Sortie/{{i.nom_beneficiaire}}">
+                                        <i class="">Recu...</i>
                                     </a>
-                                    <a class="nav-link" href="Bon_sorti_pdf/{{i.id}}">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="row">
+                                    <!-- Lien pour modifier, en s'assurant que l'URL de modification contient l'ID -->
+                                    <a class="nav-link" href="Bon_sorti_pdf/{{i.nom_beneficiaire}}">
                                         <i class="">Imprimer</i>
                                     </a>
                                 </div>

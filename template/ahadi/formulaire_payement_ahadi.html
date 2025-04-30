@@ -1,0 +1,97 @@
+
+{% extends 'index.html'%}
+{% block content %}
+{%load static%}   
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <a class="nav-link" href="{% url 'app:Data_offrande' %}">
+            <i class="fas fa-fw fa-database"></i>
+            <span>Voir les payements</span></a>
+    </div>
+    
+    <!-- Outer Row -->
+    <div class="row justify-content-center">
+        
+        <div class="col-xl-10 col-lg-12 col-md-9">
+
+            <div class="card o-hidden border-0 shadow-lg my-5">
+                <div class="card-body p-0">
+                    
+                    <!-- Nested Row within Card Body -->
+                    <div class="row">
+                        <div class="col-lg-3 d-none d-lg-block bg-login-image">
+                    
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="p-5">
+                                <div class="text-center">
+                                    <h1 class="h4 text-gray-900 mb-4">Payement ahadi</h1>
+                                    
+                                </div>
+                                <form class="user" method="post" action="{% url 'app:Payement_ahadi' %}">
+                                    {% csrf_token %}
+                                   
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="nom_offrande"
+                                            placeholder="Nom de l'offrande..." value="{{data.nom_offrande.id}}" hidden  required>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="departement"
+                                            placeholder="Nom..." value="{{data.nom_postnom}}" hidden required>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <input type="number" class="form-control"
+                                            id="exampleInputEmail" name="montant"
+                                            placeholder="Montant"  required>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="motif"
+                                            placeholder="Motif de payement"  required>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="date_payement"
+                                            placeholder="date..." value="{{date_paiement}}" hidden  required>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="annee"
+                                            placeholder="Annee..." value="{{annee_paiement}}" hidden  required>
+                                    </div>
+                                    
+                                    
+                                    <div class="single-form">
+                                        <button class="btn btn-primary btn-block" type="submit">Payer</button>
+                                    </div>
+                                    
+                               </form>
+                               <hr>
+                               <div class="text-center">
+                                {% if message_succes %}
+                                &#x2714; <i class="small text-xs font-weight-normal text-success" >{{message_succes}}</i>    
+                                {% endif %}
+                                {% if message_erreur %}
+                                &#x274C; <i class="small text-xs font-weight-normal text-danger" >{{message_erreur}}</i>
+                                {% endif %}  
+                                   
+                               </div>
+                               
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

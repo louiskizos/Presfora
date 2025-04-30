@@ -5,7 +5,7 @@
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <a class="nav-link" href="{% url 'app:Groupe_offrande_data' %}">
+        <a class="nav-link" href="{% url 'app:Groupe_Prevision_Data' %}">
             <i class="fas fa-fw fa-database"></i>
             <span>Data</span></a>
     </div>
@@ -38,12 +38,6 @@
                                             placeholder="Description du groupe " value="{{groupe_previsions.num_ordre}}" required>
                                     </div>
 
-                                    <div class="form-group">
-                                        <input type="text" class="form-control"
-                                            id="exampleInputEmail" name="description_prevision"
-                                            placeholder="Description du groupe " value="{{groupe_previsions.description_prevision}}" required>
-                                    </div>
-                                   
                                     <div class="single-form">
                                         <button class="btn btn-primary btn-block" type="submit">Modifier</button>
                                     </div>

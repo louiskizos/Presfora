@@ -7,7 +7,7 @@
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <a class="nav-link" href="{% url 'app:Sorte_Prevision_Data' %}">
             <i class="fas fa-fw fa-database"></i>
-            <span>Voir les sortes des previsions</span></a>
+            <span>Voir les previsions</span></a>
     </div>
     
     <!-- Outer Row -->
@@ -26,13 +26,21 @@
                         <div class="col-lg-6">
                             <div class="p-5">
                                 <div class="text-center">
-                                    <h1 class="h4 text-gray-900 mb-4">Sortes des previsions</h1>
+                                    <h1 class="h4 text-gray-900 mb-4">Prevision</h1>
                                     
                                 </div>
                                 <form class="user" method="post" action="{% url 'app:Create_Prevision' %}">
                                     {% csrf_token %}
 
-
+                                    <div class="form-group">
+                                        <select type="text" class="form-control form-control-select" name="descript_prevision" id="descript_prevision">
+                                            {% for data in data %}
+                                                <option value="{{data.id}}">{{data.num_ordre}}</option>
+                                            {% empty %}
+                                                <option value="#">Pas de données</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
                                     <div class="form-group">
                                         <input type="number" class="form-control"
                                             id="exampleInputEmail" name="num_compte"
@@ -43,18 +51,19 @@
                                             id="exampleInputEmail" name="nom_prevision"
                                             placeholder="Nom de la prevision " required>
                                     </div>
-                                    <div class="form-group">
-                                        <select type="text" class="form-control form-control-select" name="descript_prevision" id="descript_prevision">
-                                            {% for data in data %}
-                                                <option value="{{data.id}}">{{data.description_prevision}}</option>
-                                            {% empty %}
-                                                <option value="#">Pas de données</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
                                     
+                                    <div class="form-group">
+                                        <input type="number" class="form-control"
+                                            id="exampleInputEmail" name="montant_prevus"
+                                            placeholder="Montant prevu" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="annee_prevus"
+                                            placeholder="Annee" value="{{data_prevu}}" hidden required>
+                                    </div>
                                     <div class="single-form">
-                                        <button class="btn btn-primary btn-block" type="submit">Ajouter</button>
+                                        <button class="btn btn-primary btn-block" type="submit">Prevoir</button>
                                     </div>
                                     
                                </form>

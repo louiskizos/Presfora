@@ -12,7 +12,7 @@
         
     </div>
 
-    <p class="mb-4">Ce tableau contient la liste de toute les depenses faitent a l'eglise CBCA Katoyi </p>
+    <p class="mb-4">Ce tableau contient la liste de tout le offrandes de l'eglise CBCA Katoyi </p>
 
     <!-- DataTales Example -->
     <div class="card shadow mb-4">
@@ -35,22 +35,17 @@
                     <tbody>
                         {% for i in data %}
                         <tr>
-                            <td>{{ forloop.counter }}</td>  <!-- Affichage du numéro d'ordre dynamique -->
-                           <!-- <td>{{ i.num_compte }}</td> -->
-                            <td>{{ i.descript_prevision }}</td>
+                            <!-- <td>{{ forloop.counter }}</td> -->
+                            <td>{{ i.num_compte }}</td> 
+                            <td>{{ i.descript_recette }}</td>
                             <td>{{ i.nom_offrande }}</td>
                             <td>
-                                <div class="row">
+                                
                                     <!-- Lien pour modifier l'élément -->
-                                    <a class="nav-link" href="">
-                                        <i class="small text-xs font-weight-bold text-primary">Modifier</i>
+                                    <a class="nav-link" href="Formulaire_Ahadi/{{i.id}}">
+                                        <i class="small text-xs font-weight-bold text-primary">Souscrire</i>
                                     </a>
                                     
-                                    <!-- Lien pour supprimer l'élément -->
-                                    <a class="nav-link" href="Supprimer_Sorte_Offrande/{{i.id}}">
-                                        <i class="small text-xs font-weight-bold text-danger">Supprimer</i>
-                                    </a>
-                                </div>
                             </td>
                         </tr>
                         {% endfor %}

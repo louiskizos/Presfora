@@ -39,10 +39,10 @@ urlpatterns = [
     path('Supprimer_Groupe_Prevision/<uuid:id>/', Supprimmer_Groupe_Prevision, name='Supprimer_Groupe_Prevision'),
     path('Modifier_PrevisionPage/<uuid:id>/', update_groupe_previsions, name='Modifier_PrevisionPage'),
     path('Modifier_Groupe_Prevision/<uuid:id>/', updateGroupePrevision, name='Modifier_Groupe_Prevision'),
-    ########### SORTE DES PREVISIONS ################################
+    ########### PREVOIR ################################
     
-    path('Sorte_Prevision', sorte_previsonPage, name='Sorte_Prevision'),
-    path('Create_Prevision', CreateSortePrevision, name='Create_Prevision'),
+    path('Prevoir', prevoirPage, name='Prevoir'),
+    path('Create_Prevision', CreatePrevision, name='Create_Prevision'),
     path('Sorte_Prevision_Data', Sorte_Prevision_Data, name='Sorte_Prevision_Data'),
     
     
@@ -53,21 +53,32 @@ urlpatterns = [
     path('Payement_Offrande_Data',Payement_Offrande_Data, name='Payement_Offrande_Data'),
     
     ################ Depense   #########################
-    path('Depense', depensePage, name='Depense'),
+    path('Depense/<int:id>/', depensePage, name='Depense'),
     path('Depenser', depenser, name='Depenser'),
-    path('Depense_data', Depense_Data, name='Depense_data'),
+    path('Depense_data', depense_data, name='Depense_data'),
+    path('Sortie_data', Sortie_Data, name='Sortie_data'),
+    
+    ################ AHADI   ##########################
+    path('Souscrire_Ahadi', souscrire_ahadi_Page, name='Souscrire_Ahadi'),
+    path('Payement_Ahadi', payement_ahadi_Page, name='Payement_Ahadi'),
+    path('Formulaire_Ahadi/<uuid:id>/', ahadiformulairePage, name='Formulaire_Ahadi'),
+    path('Souscrire', souscrire, name='Souscrire'),
+    path('Liste_souscription', liste_souscription, name='Liste_souscription'),
+    path('Details/<uuid:id>/', detailPage, name='Details'),
+    path('Formulaire_Ahadi_Payement/<uuid:id>/', Formulaire_Ahadi_Payement, name='Formulaire_Ahadi_Payement'),
+    path('Payement_ahadi', payement_ahadi, name='Payement_ahadi'),
+    
+    
     
     
     ############## Recu #########################
     path('Recu/<uuid:id>/', recuPage, name='Recu'),
     path('Recu_data', recu_dataPage, name='Recu_data'),
-    path('Bon_Sortie/<uuid:id>/', bonSortiePage, name='Bon_Sortie'),
+    path('Bon_Sortie/<str:nom>/', bonSortiePage, name='Bon_Sortie'),
     
     ############# Rapport PDF #####################
-    path('Recu_pdf/<uuid:id>/', recu_pdf, name='Recu_pdf'),
-    
-    path('Bon_sorti_pdf/<uuid:id>/', bon_sorti_pdf, name='generate_sorti_pdf'),
-    
+    path('Recu_pdf/<uuid:pdf_id>/', recu_pdf, name='Recu_pdf'),
+    path('Bon_sorti_pdf/<uuid:pdf_id>/', bon_sorti_pdf, name='generate_sorti_pdf'),
     path('test', Pagination_Search_Groupe_Offrande, name='test'),
     
     #################### DATA API #######################

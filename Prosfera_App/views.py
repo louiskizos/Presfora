@@ -1,3 +1,4 @@
+import decimal
 from django.shortcuts import  render, redirect, get_object_or_404
 from django.contrib.auth.models import User, auth
 from django.contrib.auth.decorators import login_required
@@ -15,10 +16,16 @@ from rest_framework.response import Response
 from .serializers import PayementOffrandeSerializer, PrevoirSerializer
 import re
 import io
-from django.http import FileResponse
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import landscape, A5
 from django.http import HttpResponse
+from num2words import num2words
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.platypus import Table, TableStyle
+from django.http import HttpResponse, FileResponse
+from .models import Depense  # Assure-toi que Depense est importé
 
 # Create your views here.
 
@@ -183,15 +190,17 @@ def homePage(request):
         
         depense = Depense.objects.aggregate(total = Sum('montant'))['total']
         depense = depense if depense is not None else 0.0
-        reste = (soldes - depense)
+        reste = soldes - depense
+        
         montant_prevu = Prevoir.objects.aggregate(total = Sum('montant_prevus'))['total']
-        montant_prevu = soldes if montant_prevu is not None else 0.0
+        montant_prevu = montant_prevu if montant_prevu is not None else 0.0
         groupes_offrande_list = Groupe_Offrandes.objects.filter(user=request.user)
     
     # Récupérer le terme de recherche depuis la requête GET
     
         context = {
                 'Soldes' : reste,
+                'encaissement' : soldes,
                 'Depense' : depense,
                 'Montant_prevu' : montant_prevu,
                 #'search_query': search_query
@@ -601,19 +610,10 @@ def groupe_previsonPage(request):
 def CreateGroupe_Prevision(request):
     
     if request.method == 'POST':
-        
-        # Récupérer les valeurs envoyées par le formulaire
-        #user_id = request.POST.get('user')  # L'ID de la recette
-        num_ordre = request.POST.get('num_ordre')
-        description_prevision = request.POST.get('description_prevision')
-        
-        
        
-        # Vérification si le numéro de compte existe déjà
-        if Groupe_Previsions.objects.filter(description_prevision=description_prevision).exists():
-            message_erreur = "Le nom du groupe du prevision existe déjà !"
-            return render(request, 'prevision/groupe_prevision.html', {'message_erreur': message_erreur })
-
+        num_ordre = request.POST.get('num_ordre')
+      
+       
         if Groupe_Previsions.objects.filter(num_ordre=num_ordre).exists():
             message_erreur = "Le numero du groupe du prevision existe déjà !"
             return render(request, 'prevision/groupe_prevision.html', {'message_erreur': message_erreur })
@@ -621,10 +621,8 @@ def CreateGroupe_Prevision(request):
         
         # Création de l'enregistrement
         prevision = Groupe_Previsions(
-            description_prevision=description_prevision,  # Assigner l'objet Recette_Budget ici
-            num_ordre = num_ordre,
-            #user=id_user,
-           
+            
+            num_ordre = num_ordre,           
         )
         
         # Sauvegarde de l'enregistrement
@@ -645,7 +643,7 @@ def Supprimmer_Groupe_Prevision(request, id):
     groupe_prevision = Groupe_Previsions.objects.get(id=id)
     
     # Vérifier si ce groupe d'offrande est utilisé dans le modèle Sorte_Offrande
-    if Sorte_Prevision.objects.filter(descript_prevision=groupe_prevision).exists():
+    if Prevoir.objects.filter(descript_prevision=groupe_prevision).exists():
         # Si un ou plusieurs Sorte_Offrande sont liés à ce groupe, empêcher la suppression
         messages.error(request, "Impossible de supprimer ce groupe de prevision, car il est déjà utilisé dans une sorte de pprevision.")
         return redirect("app:Groupe_Prevision_Data")
@@ -694,16 +692,15 @@ def updateGroupePrevision(request, id):
     if request.method == 'POST':
         # Récupération des données du formulaire
         num_ordre = request.POST['num_ordre']
-        description_prevision = request.POST['description_prevision']
+        
         
         try:
             # Récupération de l'instance Groupe_Previsions à modifier
             data_groupe = Groupe_Previsions.objects.get(id=id)
             # Vérification si les données sont différentes avant de les enregistrer
-            if data_groupe.num_ordre != num_ordre or data_groupe.description_prevision != description_prevision:
+            if data_groupe.num_ordre != num_ordre :
                 # Si les données sont différentes, on effectue la mise à jour
                 data_groupe.num_ordre = num_ordre
-                data_groupe.description_prevision = description_prevision
                 data_groupe.save()
             
             # Redirection vers la page des données de groupe de prévision
@@ -719,18 +716,23 @@ def updateGroupePrevision(request, id):
 ############## SORTE DES PREVISIONS #####################
 
 @login_required
-def sorte_previsonPage(request):
+def prevoirPage(request):
+    current_date = datetime.now()
+ 
+   # formatted_date = current_date.strftime('%d-%m-%Y')
+    formatted_anne = current_date.strftime('%Y')
     data = Groupe_Previsions.objects.all()
     context = {
-        'data' : data
+        'data' : data,
+        'data_prevu' : formatted_anne
     }
-    page = 'sorte_previsions/sorte_previsions.html'
+    page = 'prevoir/formulaire_prevoir.html'
     return render(request, page, context)
 
 
 
 @login_required
-def CreateSortePrevision(request):
+def CreatePrevision(request):
     
     
     if request.method == 'POST':
@@ -738,17 +740,24 @@ def CreateSortePrevision(request):
         descript_prevision = request.POST.get('descript_prevision')  # L'ID de la recette
         num_compte = request.POST.get('num_compte')
         nom_prevision = request.POST.get('nom_prevision')
+        annee_prevus = request.POST.get('annee_prevus')
+        montant_prevus = request.POST.get('montant_prevus')
         
-        groupe_previsions =  Groupe_Previsions.objects.all()[:4]
+        
+        groupe_previsions =  Groupe_Previsions.objects.all()
+        
+        current_date = datetime.now()
+        formatted_anne = current_date.strftime('%Y')
         
         if descript_prevision == "#":
             
-            message_erreur = "Le groupe des offrandes est vide !"
+            message_erreur = "Le groupe des previsions est vide !"
             context = {
                 'message_erreur': message_erreur,
-                'data' : groupe_previsions
+                'data' : groupe_previsions,
+                'data_prevu' : formatted_anne
                 }
-            return render(request, 'sorte_previsions/sorte_previsions.html', context)
+            return render(request, 'prevoir/formulaire_prevoir.html', context)
         
         
         try:
@@ -761,47 +770,52 @@ def CreateSortePrevision(request):
                 'message_erreur': message_erreur,
                 'data' : groupe_previsions
                 }
-            return render(request, 'sorte_previsions/sorte_previsions.html', context)
+            return render(request, 'prevoir/formulaire_prevoir.html', context)
 
-        if Sorte_Prevision.objects.filter(num_compte=num_compte).exists():
+        if Prevoir.objects.filter(num_compte=num_compte).exists():
             message_erreur = "Le numéro du compte existe déjà !"
             context = {
                 'message_erreur': message_erreur,
-                'data' : groupe_previsions
+                'data' : groupe_previsions,
+                'data_prevu' : formatted_anne
                 }
-            return render(request, 'sorte_previsions/sorte_previsions.html', context)
+            return render(request, 'prevoir/formulaire_prevoir.html', context)
         
         # Vérification si le numéro de compte existe déjà
         
         
-        if Sorte_Prevision.objects.filter(nom_prevision=nom_prevision).exists():
+        if Prevoir.objects.filter(nom_prevision=nom_prevision).exists():
             message_erreur = "Le nom de la prevision existe déjà !"
             context = {
                 'message_erreur': message_erreur,
-                'data' : groupe_previsions
+                'data' : groupe_previsions,
+                'data_prevu' : formatted_anne
                 }
-            return render(request, 'sorte_previsions/sorte_previsions.html', context)
+            return render(request, 'prevoir/formulaire_prevoir.html', context)
 
         
         # Création de l'enregistrement
-        sorte_prevision = Sorte_Prevision(
+        prevision = Prevoir(
             descript_prevision=descript_prevision,  # Assigner l'objet Recette_Budget ici
             num_compte=num_compte,
-            nom_prevision=nom_prevision
+            montant_prevus=montant_prevus,
+            nom_prevision=nom_prevision,
+            annee_prevus = annee_prevus
         )
         
         # Sauvegarde de l'enregistrement
-        sorte_prevision.save()
+        prevision.save()
         message_succes = "Enregistrement réussi avec succès !"
         context = {
                 'message_succes': message_succes,
-                'data' : groupe_previsions
+                'data' : groupe_previsions,
+                'data_prevu' : formatted_anne
                 }
-        return render(request, 'sorte_previsions/sorte_previsions.html', context)
+        return render(request, 'prevoir/formulaire_prevoir.html', context)
     
     else:
         message_erreur = "Échec d'enregistrement !"
-        return render(request, 'sorte_previsions/sorte_previsions.html', {'message_erreur': message_erreur, 'data' : groupe_previsions})
+        return render(request, 'prevoir/formulaire_prevoir.html', {'message_erreur': message_erreur, 'data' : groupe_previsions})
 
 
 
@@ -811,7 +825,7 @@ def  Sorte_Prevision_Data(request):
     nombre_id = 10  # Par exemple, ou un autre nombre selon votre logique
     range_list = list(range(1, nombre_id + 1))
 
-    data = Sorte_Prevision.objects.all()
+    data = Prevoir.objects.all()
     #groupes_offrande_list = Sorte_Offrande.objects.filter(user=request.user)
     paginator = Paginator(data, 5)  # Afficher 10 éléments par page
     page_number = request.GET.get('page')
@@ -821,7 +835,7 @@ def  Sorte_Prevision_Data(request):
         'data' : page_obj,
         'range_list' : range_list
     }
-    page = 'sorte_previsions/prevision_data.html'
+    page = 'prevoir/prevision_data.html'
     
     # Rendu de la page
     return render(request, page, context)
@@ -855,8 +869,7 @@ def payementOffrandePage(request):
 def payementformulairePage(request, id):
     
     current_date = datetime.now()
-    
-    # Tu peux aussi formater la date selon ton besoin
+ 
     formatted_date = current_date.strftime('%d-%m-%Y')
     formatted_anne = current_date.strftime('%Y')
     data = Sorte_Offrande.objects.get(id=id)
@@ -874,14 +887,13 @@ def payementformulairePage(request, id):
 @login_required
 def payement(request):
     
-    
     if request.method == 'POST':
         
         # Récupérer les valeurs envoyées par le formulaire
         nom_offrande_id = request.POST.get('nom_offrande')  # L'ID de la recette
         departement = request.POST.get('departement')
         montant = request.POST.get('montant')
-        montant_lettre = request.POST.get('montant_lettre')
+        montant_lettre = num2words(montant, lang='fr', to='currency', currency='USD')
         motif = request.POST.get('motif')
         date_payement = request.POST.get('date_payement')
         annee = request.POST.get('annee')
@@ -963,50 +975,340 @@ def  Payement_Offrande_Data(request):
     # Rendre la page avec les données paginées et numérotées
     return render(request, 'payement_offrande/data_payement_offrande.html', context)
 
+
+
 ############# DEPENSE ####################
 
-def depensePage(request):
+def depensePage(request, id):
+    
+    sorte_offrande = get_object_or_404(Sorte_Offrande, num_compte=id)
+    total_montant = Payement_Offrande.objects.filter(nom_offrande=sorte_offrande).aggregate(
+        total_montant=Sum('montant')
+    )['total_montant'] or 0
     
     current_date = datetime.now()
     formatted_date = current_date.strftime('%d-%m-%Y')
     formatted_anne = current_date.strftime('%Y')
-    data = Payement_Offrande.objects.all()[:2]
-    #data = Payement_Offrande.objects.aggregate(total = Sum('montant'))['total']
-    
+
+     
     context = {
-        'data' : data,
+         
         'date_sortie' : formatted_date,
         'annee_sortie' : formatted_anne,
+        'nom_offrande': sorte_offrande.nom_offrande,
+        'num_compte': sorte_offrande.num_compte,
+        'montant_total': total_montant,
+        
         }
     page = 'depense/formulaire_depense.html'
     return render(request, page, context )
 
-@login_required
 def depenser(request):
     
+    context = {}
+
+    if request.method == 'POST':
+        compte = request.POST.get('compte')
+        nom_compte = request.POST.get('nom_compte')
+        nom_beneficiaire = request.POST.get('nom_beneficiaire')
+        solde_str = request.POST.get('solde')
+        montant_str = request.POST.get('montant')
+        motif = request.POST.get('motif')
+        date_sortie_str = request.POST.get('date_sortie')
+        annee_str = request.POST.get('annee')
+
+        # Vérification si les champs sont vides
+        if not montant_str or not solde_str or not annee_str:
+            context['message_erreur'] = "Veuillez remplir tous les champs obligatoires."
+            context['num_compte'] = compte
+            context['nom_offrande'] = nom_compte
+            context['montant_total'] = solde_str
+            context['annee_sortie'] = annee_str
+            context['date_sortie'] = date_sortie_str
+            return render(request, 'depense/formulaire_depense.html', context)
+
+        try:
+            # Conversion des valeurs en Decimal et en int, avec une vérification préalable
+            montant = Decimal(montant_str.replace(',', '.'))  # Assurez-vous de remplacer les virgules par des points
+            solde = Decimal(solde_str.replace(',', '.'))
+            annee = int(annee_str)  # Conversion de l'année en entier
+
+            current_date = datetime.now()
+            formatted_date = current_date.strftime('%Y-%m-%d')
+            date_sortie = formatted_date
+        except (ValueError, TypeError, decimal.InvalidOperation):
+            context['message_erreur'] = "Erreur de format dans les valeurs saisies."
+            context['num_compte'] = compte
+            context['nom_offrande'] = nom_compte
+            context['montant_total'] = solde_str
+            context['annee_sortie'] = annee_str
+            context['date_sortie'] = date_sortie_str
+            return render(request, 'depense/formulaire_depense.html', context)
+
+        # Vérification du solde
+        if solde < montant:
+            context['message_erreur'] = "Compte insuffisant !"
+            context['num_compte'] = compte
+            context['nom_offrande'] = nom_compte
+            context['montant_total'] = solde
+            context['annee_sortie'] = annee
+            context['date_sortie'] = date_sortie
+            return render(request, 'depense/formulaire_depense.html', context)
+
+        # Conversion du montant en lettres
+        en_lettre = num2words(montant_str, lang='fr', to='currency', currency='USD')  
+        montant_lettre = en_lettre
+
+        # Création de la dépense
+        depense = Depense(
+            compte=compte,
+            nom_compte=nom_compte,
+            nom_beneficiaire=nom_beneficiaire,
+            montant=montant,
+            montant_lettre=montant_lettre,
+            motif=motif,
+            date_sortie=date_sortie,
+            annee=annee
+        )
+        depense.save()
+
+        # Message de succès après enregistrement de la dépense
+        context['message_succes'] = "Sortie réussie avec succès !"
+        context['num_compte'] = compte
+        context['nom_offrande'] = nom_compte
+        context['montant_total'] = solde
+        context['annee_sortie'] = annee
+        context['date_sortie'] = date_sortie
+
+        return render(request, 'depense/formulaire_depense.html', context)
+
+    return render(request, 'depense/formulaire_depense.html', context)
+
+
+@login_required
+def depense_data(request):
+    # Récupération des données agrégées
+    data = Depense.objects.values('nom_beneficiaire', 'date_sortie','motif').annotate(montant_total=Sum('montant')).order_by('nom_beneficiaire', 'date_sortie','motif')
+
+    paginator = Paginator(data, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Ajouter un numéro d'ordre dynamique
+    for index, item in enumerate(page_obj, start=1):
+        item['numero_ordre'] = index
+
+    # Préparer le contexte
+    context = {
+        'data': page_obj,
+        # Tu peux ajouter d'autres informations au contexte ici si nécessaire
+    }
+
+    # Rendre la template
+    return render(request, 'depense/data_depense.html', context)
+
+@login_required
+def Sortie_Data(request):
+    
+    # Récupération des montants des payements d'offrande
+    data = Payement_Offrande.objects.values(
+        'nom_offrande__id',
+        'nom_offrande__nom_offrande',
+        'nom_offrande__num_compte'
+    ).annotate(
+        total_montant=Sum('montant')
+    )
+
+    # Récupération des soldes de dépenses
+    soldes = Depense.objects.values(
+        'compte',
+        'nom_compte'
+    ).annotate(
+        montant_total=Sum('montant')
+    ).order_by('compte', 'nom_compte')
+
+    # Créer un dictionnaire pour accéder facilement aux soldes par compte/nom_compte
+    soldes_dict = {f"{solde['compte']}_{solde['nom_compte']}": solde['montant_total'] for solde in soldes}
+
+    # Calculer la différence entre les offrandes et les soldes des dépenses
+    result = []
+    for off in data:
+        # Créer une clé pour retrouver le solde associé
+        key = f"{off['nom_offrande__num_compte']}_{off['nom_offrande__nom_offrande']}"
+        
+        # Chercher si ce compte existe dans les soldes
+        #depense_montant = soldes_dict.get(key, 0.0)  # Utiliser 0.0 si pas de correspondance
+        depense_montant = soldes_dict.get(key, Decimal('0.0'))
+        # Calculer la différence (offrande - dépense)
+        difference = off['total_montant'] - depense_montant
+        
+        # Ajouter cette différence dans le résultat
+        result.append({
+            'nom_offrande': off['nom_offrande__nom_offrande'],
+            'num_compte': off['nom_offrande__num_compte'],
+            'total_montant': off['total_montant'],
+            'depense_montant': depense_montant,
+            'difference': difference
+        })
+
+    # Paginer les objets (5 éléments par page)
+    paginator = Paginator(result, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'data': page_obj
+    }
+
+    # Rendre la page avec les données paginées et numérotées
+    return render(request, 'depense/sortie_data.html', context)
+
+
+def bonSortiePage(request, nom):
+    try:
+        nom_beneficiaire_cible = nom  # Utilisez la variable 'nom' de votre requête initiale
+        
+        # Filtrer et grouper par nom_beneficiaire, puis calculer le montant total par bénéficiaire
+        data_compte = Depense.objects.filter(nom_beneficiaire=nom_beneficiaire_cible).order_by('nom_beneficiaire', 'date_sortie','motif').values('nom_beneficiaire', 'nom_compte','compte').annotate(
+            montant_total=Sum('montant'),).order_by('nom_beneficiaire', 'nom_compte','compte')
+        
+        data = Depense.objects.filter(nom_beneficiaire=nom_beneficiaire_cible).order_by('-date_sortie').values('nom_beneficiaire').annotate(
+            montant_total=Sum('montant')
+        ).order_by('nom_beneficiaire')
+        
+        context = {'data_compte': data_compte, 'data':data}
+        page = 'rapport/bon_sortie.html'
+        return render(request, page, context)
+        
+    except ObjectDoesNotExist: # type: ignore
+        # Gérer le cas où aucun objet Depense n'est trouvé pour ce nom
+        context = {'error_message': f"Aucune dépense trouvée pour le bénéficiaire '{nom}'."}
+        page = 'rapport/bon_sortie.html'  # Vous pouvez créer une page d'erreur spécifique
+        return render(request, page, context)
+
+
+#################### AHADI #######################
+
+
+@login_required
+def souscrire_ahadi_Page(request):
+    
+    data = Sorte_Offrande.objects.filter(
+    descript_recette__description_recette__icontains="Les encadrements des adhérents"
+    )
+   
+    # Paginer les objets (5 éléments par page)
+    paginator = Paginator(data, 6)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Calculer un numéro d'ordre dynamique pour chaque objet sur la page
+    for index, objet in enumerate(page_obj, start=1):  # `start=1` commence l'index à 1
+        objet.numero_ordre = index  # Assigner le numéro d'ordre à chaque objet
+
+    # Passer les objets à la template
+    context = {
+        'data': page_obj
+    }
+    # Rendre la page avec les données paginées et numérotées
+    return render(request, 'ahadi/souscrire_ahadi.html', context)
+
+
+@login_required
+def payement_ahadi_Page(request):
+    
+    data = Ahadi.objects.all()
+   
+    # Paginer les objets (5 éléments par page)
+    paginator = Paginator(data, 6)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Calculer un numéro d'ordre dynamique pour chaque objet sur la page
+    for index, objet in enumerate(page_obj, start=1):  # `start=1` commence l'index à 1
+        objet.numero_ordre = index  # Assigner le numéro d'ordre à chaque objet
+
+    # Passer les objets à la template
+    context = {
+        'data': page_obj
+    }
+    # Rendre la page avec les données paginées et numérotées
+    return render(request, 'ahadi/liste_ahadi_doit_payer.html', context)
+
+
+
+@login_required
+def ahadiformulairePage(request, id):
+    
+    current_date = datetime.now()
+    
+    # Tu peux aussi formater la date selon ton besoin
+    formatted_date = current_date.strftime('%d-%m-%Y')
+    formatted_anne = current_date.strftime('%Y')
+    data = Sorte_Offrande.objects.get(id=id)
+    
+    context = {
+        'data' : data,
+        'date_paiement' : formatted_date,
+        'annee_paiement' : formatted_anne,
+        }
+    page = 'ahadi/formulaire_ahadi.html'
+    return render(request, page, context )
+
+@login_required
+def detailPage(request, id):
+  
+    data = Ahadi.objects.get(id=id)
+    
+    context = {
+        'data' : data,
+        
+        }
+    page = 'ahadi/detail.html'
+    return render(request, page, context )
+
+@login_required
+def Formulaire_Ahadi_Payement(request, id):
+    
+    current_date = datetime.now()
+    
+    # Tu peux aussi formater la date selon ton besoin
+    formatted_date = current_date.strftime('%d-%m-%Y')
+    formatted_anne = current_date.strftime('%Y')
+    data = Sorte_Offrande.objects.get(id=id)
+    
+    context = {
+        'data' : data,
+        'date_paiement' : formatted_date,
+        'annee_paiement' : formatted_anne,
+        }
+    page = 'ahadi/formulaire_payement_ahadi.html'
+    return render(request, page, context )
+
+
+
+@login_required
+def payement_ahadi(request):
     
     if request.method == 'POST':
         
-       
-        compte_id = request.POST.get('compte') 
-        nom_beneficiaire = request.POST.get('nom_beneficiaire')
+        # Récupérer les valeurs envoyées par le formulaire
+        nom_offrande_id = request.POST.get('nom_offrande')  # L'ID de la recette
+        departement = request.POST.get('departement')
         montant = request.POST.get('montant')
-        montant_lettre = request.POST.get('montant_lettre')
+        montant_lettre = num2words(montant, lang='fr', to='currency', currency='USD')
         motif = request.POST.get('motif')
-        date_sortie = request.POST.get('date_sortie')
+        date_payement = request.POST.get('date_payement')
         annee = request.POST.get('annee')
         
-        soldes = Payement_Offrande.objects.aggregate(total = Sum('montant'))['total']
-
         # Validation des données
         try:
             # Vérifier si l'ID de la recette existe dans la base de données
-            compte = Payement_Offrande.objects.get(id=compte_id)
-            
-        except Payement_Offrande.DoesNotExist:
-            message_erreur = "Le compte spécifié n'existe pas."
+            nom_offrande = Sorte_Offrande.objects.get(id=nom_offrande_id)
+        except Sorte_Offrande.DoesNotExist:
+            message_erreur = "Le nom d'offrande spécifiée n'existe pas."
             context = {'message_erreur': message_erreur}
-            return render(request, 'depense/formulaire_depense.html', context)
+            return render(request, 'ahadi/formulaire_payement_ahadi.html', context)
         
         # Vérification du montant (doit être un nombre décimal)
         try:
@@ -1014,7 +1316,7 @@ def depenser(request):
         except (ValueError,):
             message_erreur = "Le montant n'est pas valide."
             context = {'message_erreur': message_erreur}
-            return render(request, 'depense/formulaire_depense.html', context)
+            return render(request, 'ahadi/formulaire_payement_ahadi.html', context)
         
         # Vérification de l'année (doit être un entier)
         try:
@@ -1022,47 +1324,112 @@ def depenser(request):
         except ValueError:
             message_erreur = "L'année n'est pas valide."
             context = {'message_erreur': message_erreur}
-            return render(request, 'depense/formulaire_depense.html', context)
+            return render(request, 'ahadi/formulaire_payement_ahadi.html', context)
         
-        # Vérifier la date de sortie (assurez-vous qu'elle est dans un format valide)
+        # Vérifier la date de paiement (assurez-vous qu'elle est dans un format valide)
         try:
-            date_sortie = datetime.strptime(date_sortie, '%d-%m-%Y').date()
+            date_payement = datetime.strptime(date_payement, '%d-%m-%Y').date()
         except ValueError:
-            message_erreur = "La date de sortie n'est pas valide."
+            message_erreur = "La date de paiement n'est pas valide."
             context = {'message_erreur': message_erreur}
-            return render(request, 'depense/formulaire_depense.html', context)
+            return render(request, 'ahadi/formulaire_payement_ahadi.html', context)
         
-        if soldes < montant:
-            message_erreur = "Compte insuffisant !"
-            context = {'message_erreur': message_erreur}
-            return render(request, 'depense/formulaire_depense.html', context)
-            
         # Création de l'enregistrement
-        depenser = Depense(
-            compte=compte,  # Assigner l'objet Sorte_Offrande ici
-            nom_beneficiaire=nom_beneficiaire,
+        payement_offrande = Payement_Offrande(
+            nom_offrande=nom_offrande,  # Assigner l'objet Sorte_Offrande ici
+            departement=departement,
             montant=montant,
             montant_lettre=montant_lettre,
             motif = motif,
-            date_sortie=date_sortie,
+            date_payement=date_payement,
             annee=annee
         )
         
         # Sauvegarde de l'enregistrement
-        depenser.save()
-        message_succes = "Sortie réussie avec succès !"
+        payement_offrande.save()
+        message_succes = "Paiement réussi avec succès !"
         context = {'message_succes': message_succes}
-        return render(request, 'depense/formulaire_depense.html', context)
+        return render(request, 'ahadi/formulaire_payement_ahadi.html', context)
     
     else:
-        message_erreur = "Échec de la sortie !"
-        return render(request, 'depense/formulaire_depense.html', {'message_erreur': message_erreur})
+        message_erreur = "Échec du paiement !"
+        return render(request, 'ahadi/formulaire_payement_ahadi.html', {'message_erreur': message_erreur})
+
 
 @login_required
-def  Depense_Data(request): 
+def souscrire(request):
+    
+    if request.method == 'POST':
+        
+        # Récupérer les valeurs envoyées par le formulaire
+        nom_offrande_id = request.POST.get('nom_offrande')  # L'ID de la recette
+        nom_postnom = request.POST.get('nom_postnom')
+        montant = request.POST.get('montant')
+        montant_lettre = num2words(montant, lang='fr', to='currency', currency='USD')
+        motif = request.POST.get('motif')
+        date_ahadi = request.POST.get('date_ahadi')
+        annee = request.POST.get('annee')
+        
+        # Validation des données
+        try:
+            # Vérifier si l'ID de la recette existe dans la base de données
+            nom_offrande = Sorte_Offrande.objects.get(id=nom_offrande_id)
+        except Sorte_Offrande.DoesNotExist:
+            message_erreur = "Le nom d'offrande spécifiée n'existe pas."
+            context = {'message_erreur': message_erreur}
+            return render(request, 'ahadi/formulaire_ahadi.html', context)
+        
+        # Vérification du montant (doit être un nombre décimal)
+        try:
+            montant = Decimal(montant)
+        except (ValueError,):
+            message_erreur = "Le montant n'est pas valide."
+            context = {'message_erreur': message_erreur}
+            return render(request, 'ahadi/formulaire_ahadi.html', context)
+        
+        # Vérification de l'année (doit être un entier)
+        try:
+            annee = int(annee)
+        except ValueError:
+            message_erreur = "L'année n'est pas valide."
+            context = {'message_erreur': message_erreur}
+            return render(request, 'ahadi/formulaire_ahadi.html', context)
+        
+        # Vérifier la date de paiement (assurez-vous qu'elle est dans un format valide)
+        try:
+            date_ahadi = datetime.strptime(date_ahadi, '%d-%m-%Y').date()
+        except ValueError:
+            message_erreur = "La date de paiement n'est pas valide."
+            context = {'message_erreur': message_erreur}
+            return render(request, 'ahadi/formulaire_ahadi.html', context)
+        
+        # Création de l'enregistrement
+        souscription_ahadi = Ahadi(
+            nom_offrande=nom_offrande,  # Assigner l'objet Sorte_Offrande ici
+            nom_postnom=nom_postnom,
+            montant=montant,
+            montant_lettre=montant_lettre,
+            motif = motif,
+            date_ahadi=date_ahadi,
+            annee=annee
+        )
+        
+        # Sauvegarde de l'enregistrement
+        souscription_ahadi.save()
+        message_succes = "Souscription réussie avec succès !"
+        context = {'message_succes': message_succes}
+        return render(request, 'ahadi/formulaire_ahadi.html', context)
+    
+    else:
+        message_erreur = "Échec de la souscription !"
+        return render(request, 'ahadi/formulaire_ahadi.html', {'message_erreur': message_erreur})
+
+
+@login_required
+def  liste_souscription(request): 
 
     # Récupération des objets Sorte_Offrande
-    data = Depense.objects.all()
+    data = Ahadi.objects.all()
 
     # Paginer les objets (5 éléments par page)
     paginator = Paginator(data, 5)
@@ -1079,18 +1446,7 @@ def  Depense_Data(request):
     }
 
     # Rendre la page avec les données paginées et numérotées
-    return render(request, 'depense/data_depense.html', context)
-
-
-
-
-def bonSortiePage(request, id):
-    
-    data = Depense.objects.get(id=id)
-    
-    context = {'data' : data}
-    page = 'rapport/bon_sortie.html'
-    return render(request, page, context )
+    return render(request, 'ahadi/liste_ahadi.html', context)
 
 
 def recuPage(request, id):
@@ -1152,11 +1508,8 @@ def get_presfora_data(request):
     # Préparer les données à envoyer au frontend
     labels = list(set([p['annee'] for p in payements] + [p['annee'] for p in annees] + [p['annee'] for p in depenses] + [p['annee_prevus'] for p in previsions]))
     labels.sort()
-    # Format des données pour le graphique
-    
-    
-    
-    
+
+# Requête qui calcule la somme des montants groupés par nom_offrande  
     
     data = {
         #'labels': ["2014", "2015", "2016", ],
@@ -1219,10 +1572,10 @@ def get_presfora_data(request):
 
 ################## PDF #########################
 
-def recu_pdf(request, id):
+def recu_pdf(request,pdf_id):
     
     try:
-        data = Payement_Offrande.objects.get(id=id)
+        data = Payement_Offrande.objects.get(id=pdf_id)
     except Payement_Offrande.DoesNotExist:
         return HttpResponse("Payement_Offrande ne pas la", status=404)  # Gestion de l'erreur si l'objet n'existe pas
 
@@ -1239,13 +1592,15 @@ def recu_pdf(request, id):
 
     # Informations générales
     p.setFont("Helvetica", 12)
-    p.drawString(130, height - 30, "ECC/36ème C.B.C.A")
+    p.drawString(130, height - 30, "ECC/3ème C.B.C.A")
     p.drawString(130, height - 50, "Département : FINANCE")  # Assurez-vous que c'est correct
     p.drawString(130, height - 70, "Institution : BP 495 GOMA")
 
     # Montant en haut à droite
     p.setFont("Helvetica-Bold", 12)
     p.drawString(width - 150, height - 50, f"{data.montant}$")
+    en_lettre = num2words(data.montant, lang='fr', to='currency', currency='USD')  
+    montant_lettre = en_lettre
 
     # Titre du reçu (générer un numéro de reçu unique)
     receipt_number = f"0001/{datetime.now().year}"  # Exemple de numéro de reçu
@@ -1255,7 +1610,7 @@ def recu_pdf(request, id):
     # Détails du reçu
     p.setFont("Helvetica", 12)
     p.drawString(50, height - 170, f"Reçu de : Louis")  # Assurez-vous que c'est correct
-    p.drawString(50, height - 190, f"Montant (en lettres) : {convert_amount_to_words(data.montant)} $") #fonction à créer pour convertir le montant en lettres.
+    p.drawString(50, height - 190, f"Montant (en lettres) : {montant_lettre}") #fonction à créer pour convertir le montant en lettres.
     p.drawString(50, height - 210, f"Motif du paiement : {data.motif}")
 
     # Section Caisse
@@ -1284,28 +1639,29 @@ def convert_amount_to_words(amount):
     return "Dix" if amount == 10 else "Montant non géré"
 
 
-def bon_sorti_pdf(request, id):
-    
+
+def bon_sorti_pdf(request, id, pdf_id):
     try:
         data = Depense.objects.get(id=id)
     except Depense.DoesNotExist:
-        return HttpResponse("Pas de donnee sur les penses", status=404)  # Gestion de l'erreur si l'objet n'existe pas
+        return HttpResponse("Pas de donnée sur les dépenses", status=404)
 
-    
-    buffer = io.BytesIO()
+    # Initialisation du buffer et du canvas PDF
+    buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=landscape(A5))
     width, height = landscape(A5)
     
-    # Ajout du logo avec fond opaque
-    logo_path = "static/img/logo.png"  # Remplacez par le chemin de votre logo
+    # Logo avec fond opaque
+    logo_path = "static/img/logo.png"  # Vérifie si le chemin est correct
     p.drawImage(logo_path, 50, height - 80, width=60, height=60, mask='auto')
     
-    # Informations générales (montées légèrement)
+    # Informations générales
     p.setFont("Helvetica", 12)
-    p.drawString(120, height - 30, "ECC/36ème C.B.C.A")
+    p.drawString(120, height - 30, "ECC/3ème C.B.C.A")
     p.drawString(120, height - 50, "Département : FINANCE")
     p.drawString(120, height - 70, "Institution : EGLISE CBCA/KATOYI")
     p.drawString(120, height - 90, "BP : 495 GOMA")
+    
     # Montant en haut à droite
     p.setFont("Helvetica-Bold", 12)
     p.drawString(width - 160, height - 50, f"Date : {data.date_sortie}")
@@ -1313,57 +1669,63 @@ def bon_sorti_pdf(request, id):
     # Titre du reçu
     p.setFont("Helvetica-Bold", 16)
     p.drawString(width / 2 - 150, height - 120, "BON DE SORTIE DE CAISSE N° 0001/2025")
-    
+    en_lettre = num2words(data.montant, lang='fr', to='currency', currency='USD')  
+    montant_lettre = en_lettre
     # Détails du reçu
     p.setFont("Helvetica", 12)
-    p.drawString(50, height - 150, f"Nom de beneficiaire : {data.nom_beneficiaire}")
-    p.drawString(50, height - 170, f"Montant (en lettres) : {data.montant_lettre}")
+    p.drawString(50, height - 150, f"Nom du bénéficiaire : {data.nom_beneficiaire}")
+    p.drawString(50, height - 170, f"Montant (en lettres) : {montant_lettre}")
     p.drawString(50, height - 190, f"Motif du paiement : {data.motif}")
     
-    # Tableau 3x3
-    # 3x3 Tableau (on dessine d'abord les lignes, puis on les remplit avec des textes)
-    x_start = 50
-    y_start = height - 220
-    cell_width = 150
-    cell_height = 20
-
-# Dessiner les lignes du tableau
-    for i in range(4):  # 4 lignes (inclut la ligne du bas)
-        p.line(x_start, y_start - i * cell_height, x_start + 3 * cell_width, y_start - i * cell_height)
-
-    for j in range(4):  # 4 colonnes (inclut la colonne de droite)
-        p.line(x_start + j * cell_width, y_start, x_start + j * cell_width, y_start - 3 * cell_height)
-
-# Remplir le tableau avec des données (par exemple des informations sur les transactions)
-    p.setFont("Helvetica", 10)
-
-# Ligne 1 (Titres des colonnes)
-    p.drawString(x_start + 10, y_start - 10, "Numero du compte")
-    p.drawString(x_start + cell_width + 10, y_start - 10, "Description")
-    p.drawString(x_start + 2 * cell_width + 10, y_start - 10, "Montant")
-
-# Ligne 2
-    p.drawString(x_start + 10, y_start - 30, f"{data.compte.nom_offrande.num_compte}")
-    p.drawString(x_start + cell_width + 10, y_start - 30, f"{data.compte.nom_offrande}")
-    p.drawString(x_start + 2 * cell_width + 10, y_start - 30, f"{data.montant}")
-
+    # Tableau avec Table et TableStyle
+    table_data = [
+        ['Numéro du compte', 'Description', 'Montant'],  # En-têtes
+        [data.compte.nom_offrande.num_compte, data.compte.nom_offrande, data.montant]  # Valeurs
+    ]
+    
+    # Créer l'objet Table
+    table = Table(table_data, colWidths=[150, 150, 150], rowHeights=20)
+    
+    # Appliquer le style au tableau
+    style = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),  # Fond des en-têtes
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),  # Couleur du texte des en-têtes
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  # Alignement du texte
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Police des en-têtes
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),  # Padding pour les en-têtes
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),  # Fond des lignes
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Bordures des cellules
+    ])
+    table.setStyle(style)
+    
+    # Positionner le tableau sur la page (en bas du bloc de texte)
+    table.wrapOn(p, width, height)
+    table.drawOn(p, 50, height - 220 - 50)  # Ajuste la position du tableau
     
     # Section Caisse
     p.setFont("Helvetica", 12)
-    p.drawString(50, height - 310, "Tresorier/ RPS/EVARES/ Comptable.Sce")
-    
+    p.drawString(50, height - 310, "Trésorier / RPS / EVARES / Comptable.Sce")
+
     p.setFont("Helvetica", 12)
     p.drawString(320, height - 310, 'Pour acquit')
-    
+
     # Date et validation centrées
     p.setFont("Helvetica", 12)
     date_text = f"Caissier"
     date_x = width - 120   
     p.drawString(date_x, height - 310, date_text)
    
-    
     p.showPage()
     p.save()
     
     buffer.seek(0)
-    return FileResponse(buffer, as_attachment=True, filename=f"Bon de sorti de {data.nom_beneficiaire}.pdf")
+    return FileResponse(buffer, as_attachment=True, filename=f"Bon_de_sortie_{data.nom_beneficiaire}.pdf")
+
+
+
+def num_lettre():
+    num = 12.4
+    en_lettre = num2words(num, lang='fr', to='currency', currency='USD')
+    print(en_lettre)
+    
+    return HttpResponse()

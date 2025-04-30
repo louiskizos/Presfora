@@ -22,8 +22,8 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Solde</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">${{Soldes}}</div>
+                                Encaissement</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">$ {{encaissement}}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
@@ -33,24 +33,7 @@
             </div>
         </div>
 
-        <!-- Card Contributions -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Contributions</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">${{contribution}}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+        
         <!-- Card depenses -->
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-danger shadow h-100 py-2">
@@ -59,7 +42,7 @@
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
                                 Depenses</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">${{Depense}}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">$ {{Depense}}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
@@ -68,6 +51,25 @@
                 </div>
             </div>
         </div>
+
+        <!-- Card Soldes -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Solde</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">$ {{Soldes}}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Pending Requests Card Prevision -->
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-danger shadow h-100 py-2">
