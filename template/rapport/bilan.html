@@ -23,46 +23,27 @@
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
-                        <tr>
+                    
                            <!-- <th>Numero d'ordre</th> -->
-                            <th>Numero du compte</th>
-                            <th>Nom & Post-Nom</th>
-                            <th>Nom d'offrande</th>
-                            <th>Montant</th>
-                            <th>Date de payement</th>
-                            <th>Voir ...</th>
-                            <th>Impression</th>
+                           <tr>
+                            <th>N°</th>
+                            <th>LES OFFRANDES / LES ENGAGEMENTS DES ADHERENTS</th>
+                            <th>Numéro de compte</th>
+                            <th>PREVISION 2024</th>
+                            <th>PREVISION 2025</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for i in data %}
-                        <tr>
-                    
-                            <td>{{ i.nom_offrande.num_compte }}</td>
-                            <td>{{ i.departement }}</td>
-                            <td>{{ i.nom_offrande }}</td>
-                            <td>{{ i.montant }}</td>
-                            <td>{{ i.date_payement }}</td>
+                        {% for prevision in previsions %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ prevision.nom_prevision }}</td>
+                                <td>{{ prevision.num_compte }}</td>
+                                <td></td> <td>{{ prevision.montant_prevus }}</td>
+                            </tr>
                             
-                            <td>
-                                <div class="row">
-                                    <!-- Lien pour modifier, en s'assurant que l'URL de modification contient l'ID -->
-                                    <a class="nav-link d-block" href="Recu/{{i.id}}">
-                                        <i class="">Voir</i>
-                                    </a>
-                                </div>
-                            </td>
-                            
-                            <td>
-                                <div class="row">
-                                    <!-- Lien pour modifier, en s'assurant que l'URL de modification contient l'ID -->
-                                    <a class="nav-link d-block" href="Recu_pdf/{{i.id}}">
-                                        <i class="">Imprimer</i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
                         {% endfor %}
+                        
                     </tbody>
                     
    

@@ -67,10 +67,6 @@ urlpatterns = [
     path('Details/<uuid:id>/', detailPage, name='Details'),
     path('Formulaire_Ahadi_Payement/<uuid:id>/', Formulaire_Ahadi_Payement, name='Formulaire_Ahadi_Payement'),
     path('Payement_ahadi', payement_ahadi, name='Payement_ahadi'),
-    
-    
-    
-    
     ############## Recu #########################
     path('Recu/<uuid:id>/', recuPage, name='Recu'),
     path('Recu_data', recu_dataPage, name='Recu_data'),

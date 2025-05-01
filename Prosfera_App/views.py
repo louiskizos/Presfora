@@ -178,35 +178,27 @@ def change_password(request):
 
 ############## ACCEUIL ###############################
 
+
 @login_required
 def homePage(request):
-    
-    
-    
     if request.user.is_authenticated:
         
-        soldes = Payement_Offrande.objects.aggregate(total = Sum('montant'))['total']
-        soldes = soldes if soldes is not None else 0.0
+        soldes = Payement_Offrande.objects.aggregate(total=Sum('montant'))['total']
+        soldes = Decimal(soldes) if soldes is not None else Decimal(0.0)
         
-        depense = Depense.objects.aggregate(total = Sum('montant'))['total']
-        depense = depense if depense is not None else 0.0
+        
+        depense = Depense.objects.aggregate(total=Sum('montant'))['total']
+        depense = Decimal(depense) if depense is not None else Decimal(0.0)
         reste = soldes - depense
+        montant_prevu = Prevoir.objects.aggregate(total=Sum('montant_prevus'))['total']
+        montant_prevu = Decimal(montant_prevu) if montant_prevu is not None else Decimal(0.0)
         
-        montant_prevu = Prevoir.objects.aggregate(total = Sum('montant_prevus'))['total']
-        montant_prevu = montant_prevu if montant_prevu is not None else 0.0
-        groupes_offrande_list = Groupe_Offrandes.objects.filter(user=request.user)
-    
-    # Récupérer le terme de recherche depuis la requête GET
-    
         context = {
-                'Soldes' : reste,
-                'encaissement' : soldes,
-                'Depense' : depense,
-                'Montant_prevu' : montant_prevu,
-                #'search_query': search_query
-                #'countTrans' : total_trans,
-                # 'pourcentage' : total_pourc
-            }
+            'Soldes': reste,
+            'encaissement': soldes,
+            'Depense': depense,
+            'Montant_prevu': montant_prevu,
+        }
         
         page = 'statistic/statistique.html'
         return render(request, page, context)
@@ -1637,26 +1629,50 @@ def recu_pdf(request,pdf_id):
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename=f"recu de {data.departement}.pdf")
 
-
+from collections import defaultdict
 @login_required
 def  bilan(request): 
 
-    # Récupération des objets Sorte_Offrande
-    data = Ahadi.objects.all()
+    # # Récupération des objets Sorte_Offrande
+    # #data_2 = Prevoir.objects.all()
+    # #data = Prevoir.objects.values('descript_prevision__description_prevision','descript_prevision__num_ordre','annee_prevus').annotate(total_prevus=Sum('montant_prevus'))
 
-    # Paginer les objets (5 éléments par page)
-    paginator = Paginator(data, 5)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    #     # Récupérer les données agrégées (somme des montants par descript_prevision et annee_prevus)
+    # data = Prevoir.objects.values(
+    #         'descript_prevision__description_prevision',
+    #         'descript_prevision__num_ordre',
+    #         'annee_prevus'
+    #     ).annotate(total_prevus=Sum('montant_prevus'))
 
-    # Calculer un numéro d'ordre dynamique pour chaque objet sur la page
-    for index, objet in enumerate(page_obj, start=1):  # `start=1` commence l'index à 1
-        objet.numero_ordre = index  # Assigner le numéro d'ordre à chaque objet
+    #     # Récupérer toutes les données complètes (objets Prevoir)
+    # data_2 = Prevoir.objects.all()
 
-    # Passer les objets à la template
-    context = {
-        'data': page_obj
-    }
+    #     # Combiner les deux ensembles de données
+    #     # Créer une liste de dictionnaires avec les données agrégées et les données complètes
+    # combined_data = []
+    # for item in data:
+    #         # Trouver tous les objets Prevoir qui correspondent à l'agrégation (en fonction de descript_prevision et annee_prevus)
+    #     related_data = data_2.filter(
+    #             descript_prevision__description_prevision=item['descript_prevision__description_prevision'],
+    #             annee_prevus=item['annee_prevus']
+    #         )
+    #         # Ajouter les données complètes à chaque agrégation
+    #     combined_data.append({
+    #             'description_prevision': item['descript_prevision__description_prevision'],
+    #             'num_ordre': item['descript_prevision__num_ordre'],
+    #             'annee_prevus': item['annee_prevus'],
+    #             'total_prevus': item['total_prevus'],
+    #             'related_data': related_data  # Données complètes associées
+    #         })
+
+
+    # # Passer les objets à la template
+    # context = {
+    #     'data': combined_data
+    # }
+    annee_cible = 2025
+    previsions = Prevoir.objects.filter(annee_prevus=annee_cible).order_by('descript_prevision')
+    context = {'previsions': previsions}
 
     # Rendre la page avec les données paginées et numérotées
     return render(request, 'rapport/bilan.html', context)
