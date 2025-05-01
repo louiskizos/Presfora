@@ -68,8 +68,7 @@ class Groupe_Previsions(models.Model):
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     num_ordre = models.CharField(max_length=100)
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    #description_prevision = models.CharField(max_length=100)
+    description_prevision = models.CharField(max_length=100)
     
     def __str__(self):
         return self.num_ordre
@@ -85,18 +84,6 @@ class Prevoir(models.Model):
     annee_prevus = models.IntegerField()
     def __str__(self):
         return self.nom_prevision
-    
-# class Prevoir(models.Model):
-    
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     num_compte = models.BigIntegerField()
-#     descript_prevision = models.ForeignKey(Groupe_Offrandes, on_delete=models.CASCADE)
-#     nom_prevision = models.TextField(max_length=50)
-#     montant_prevus = models.DecimalField(max_digits=15, decimal_places=2)
-#     annee_prevus = models.IntegerField()
-    
-#     def __str__(self):
-#         return self.descript_prevision
     
     
 class PayementOffrandeSerializer(serializers.ModelSerializer):

@@ -612,17 +612,21 @@ def CreateGroupe_Prevision(request):
     if request.method == 'POST':
        
         num_ordre = request.POST.get('num_ordre')
-      
+        description_prevision = request.POST.get('description_prevision')
        
         if Groupe_Previsions.objects.filter(num_ordre=num_ordre).exists():
             message_erreur = "Le numero du groupe du prevision existe déjà !"
             return render(request, 'prevision/groupe_prevision.html', {'message_erreur': message_erreur })
 
-        
+        if Groupe_Previsions.objects.filter(description_prevision=description_prevision).exists():
+            message_erreur = "Le nom du groupe du prevision existe déjà !"
+            return render(request, 'prevision/groupe_prevision.html', {'message_erreur': message_erreur })
+
         # Création de l'enregistrement
         prevision = Groupe_Previsions(
             
-            num_ordre = num_ordre,           
+            num_ordre = num_ordre,
+            description_prevision=description_prevision           
         )
         
         # Sauvegarde de l'enregistrement
