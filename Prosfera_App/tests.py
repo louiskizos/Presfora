@@ -13,4 +13,4 @@ from django.test import TestCase
 ######## git branch -m master main 
 
 ##### git push -u master
-##### Lien : https://prosphora.pythonanywhere.com
+##### Lien : https://prosphora.pythonanywhere.com source /home/Prosphora/.virtualenvs/venv/bin/activate
