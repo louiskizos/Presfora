@@ -8,11 +8,11 @@
 
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Table de sorte des offrandes</h1>
+        <h1 class="h3 mb-0 text-gray-800">Table de depenses</h1>
         
     </div>
 
-    <p class="mb-4">Ce tableau contient la liste de tout les comptes de l'eglise CBCA Katoyi </p>
+    <p class="mb-4">Ce tableau contient la liste de toutes les depenses faites a l'eglise CBCA Katoyi </p>
 
     <!-- DataTales Example -->
     <div class="card shadow mb-4">
@@ -29,23 +29,18 @@
                             <th>Numero du compte</th>
                             <th>Nom du compte</th>
                             <th>Montant</th>
-                            <th>Actions</th>
+                            <th>Date</th>
                             
                         </tr>
                     </thead>
                     <tbody>
              {% for item in data %}
             <tr>
-                <td>{{ item.num_compte }}</td>
+                <td>{{ item.nom_offrande.num_compte }}</td>
                 <td>{{ item.nom_offrande }}</td>
-                <td>{{ item.difference|floatformat:2 }}</td>
+                <td>{{ item.montant }}</td>
                  <td>
-                                <div class="row">
-                                    <!-- Lien pour modifier, en s'assurant que l'URL de modification contient l'ID -->
-                                    <a class="nav-link" href="Depense/{{item.num_compte}}">
-                                        <i class="">Depenser</i>
-                                    </a>
-                                </div>
+                        {{ item.date_payement }}        
                 </td>
             </tr>
             {% empty %}

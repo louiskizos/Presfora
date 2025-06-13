@@ -1,0 +1,124 @@
+{% extends 'index.html'%}
+{% block content %}
+{%load static%}   
+
+
+
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Table de livre de caisse</h1>
+        
+    </div>
+
+    <p class="mb-4">Ce tableau contient la liste de toute les sorties et entrees  faitent a l'eglise CBCA Katoyi </p>
+
+    <!-- DataTales Example -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Livre de caisse</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                           <!-- <th>Numero d'ordre</th> -->
+                            <th>Date</th>
+                            <th>Numero d'ordre</th>
+                            <th>Libelle</th>
+                            <th>Input</th>
+                            <th>Debit</th>
+                            <th>Credit</th>
+                            <th>Solde</th>
+                        </tr>
+                    </thead>
+        <tbody>
+    {% for item in data %}
+    <tr>
+        <td>{{ item.op.date_payement }}</td>
+        <td>{{ item.op.type_payement }}</td>
+        <td>{{ item.op.nom_offrande }}</td>
+        <td>{{ item.op.nom_offrande.num_compte }}</td>
+        
+        <td>
+            {% if item.op.type_payement == "Sortie" %}
+                -
+            {% else %}
+                {{ item.op.montant }}
+            {% endif %}
+        </td>
+        
+        <td>
+            {% if item.op.type_payement == "Entree" %}
+                -
+            {% else %}
+                {{ item.op.montant }}
+            {% endif %}
+        </td>
+
+        <td>
+                {{ item.cumulative_sum }}
+            
+        </td>
+        
+    </tr>
+    {% endfor %}
+
+
+</tbody>
+
+
+   
+                </table>
+                {% if message_succes %}
+                                &#x2714; <i class="small text-xs font-weight-normal text-success" >{{message_succes}}</i>    
+                                {% endif %}
+                                {% if message_erreur %}
+                                &#x274C; <i class="small text-xs font-weight-normal text-danger" >{{message_erreur}}</i>
+                {% endif %} 
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination justify-content-end">
+                        <li class="page-item ">
+                            {% if data.has_previous %}
+                                    <a class="page-link" href="?page={{ data.previous_page_number }}">Précédent</a>
+                            {% endif %}
+                        </li>
+                        {% for num in data.paginator.page_range %}
+                            {% if data.number == num %}
+                              <!-- Page active -->
+                              <li class="page-item">
+                                
+                                <a class="page-link" href="#">{{ num }}</a>
+                            </li>
+                            {% else %}
+                              <!-- Page cliquable -->
+                              <li class="page-item">
+                                <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+                              </li>
+                            {% endif %}
+                          {% endfor %}
+    
+                        <li class="page-item">
+                        
+                        {% if data.has_next %}
+                                            <a class="page-link" href="?page={{ data.next_page_number }}">Suivant</a>
+                                            
+                            {% endif %}
+                        </li>
+                    </ul>
+                    </nav>
+
+            </div>
+        </div>
+    </div>
+
+
+
+   
+
+</div>
+
+
+{% endblock %}

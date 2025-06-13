@@ -30,30 +30,44 @@
                             <th>LES OFFRANDES / LES ENGAGEMENTS DES ADHERENTS</th>
                             <th>Numéro de compte</th>
                             <th>PREVISION 2024</th>
-                            <th>PREVISION 2025</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for prevision in previsions %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td>{{ prevision.nom_prevision }}</td>
-                                <td>{{ prevision.num_compte }}</td>
-                                <td></td> <td>{{ prevision.montant_prevus }}</td>
-                            </tr>
                             
-                        {% endfor %}
-                        
-                    </tbody>
+                        </tr>
                     
-   
-                </table>
-                {% if message_succes %}
-                                &#x2714; <i class="small text-xs font-weight-normal text-success" >{{message_succes}}</i>    
-                                {% endif %}
-                                {% if message_erreur %}
-                                &#x274C; <i class="small text-xs font-weight-normal text-danger" >{{message_erreur}}</i>
-                {% endif %} 
+                    </thead>
+                        </thead>
+                        <tbody>
+                            {% for bloc in data %}
+                                <!-- Ligne de regroupement -->
+                                <tr style="background-color: #f0f8ff; font-weight: bold;">
+                                    <td></td>
+                                    <td>{{ bloc.description_prevision }}</td>
+                                    <td>{{ bloc.num_ordre }}</td>
+                                    <td>Sous-total {{ bloc.total_prevus }}</td>
+                                    
+                                    
+                                </tr>
+                                
+                    
+                                <!-- Détails ligne par ligne -->
+                                {% for item in bloc.related_data %}
+                                    <tr>
+                                        <td></td>
+                                        <td>{{ item.nom_prevision }}</td>
+                                        <td>{{ item.num_compte }}</td>
+                                        <td>{{ item.montant_prevus }}</td>
+                                        
+                                        
+                                    </tr>
+                                 
+                                    
+                                {% endfor %}
+                            {% empty %}
+                                <tr><td colspan="6">Aucune donnée trouvée.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    
+                
                 <nav aria-label="Page navigation example">
                     <ul class="pagination justify-content-end">
                         <li class="page-item ">
@@ -90,10 +104,7 @@
         </div>
     </div>
 
-
-
-   
-
+ 
 </div>
 
 

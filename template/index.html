@@ -144,7 +144,7 @@
                         <a class="collapse-item" href="{% url 'app:Payement_Ahadi' %}">Ahadi</a>
                         
                         
-                        <a class="collapse-item" href="{% url 'app:Depense_data'%}">Recu Ahadi</a>
+                        <a class="collapse-item" href="{% url 'app:Payement_ahadi_data'%}">Recu Ahadi</a>
                     </div>
                 </div>
             </li>
@@ -158,7 +158,7 @@
                     data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <h6 class="collapse-header">Details :</h6>
-                        <a class="collapse-item" href="{% url 'app:Sortie_data' %}">depense</a>
+                        <a class="collapse-item" href="{% url 'app:Depense_data'%}">depense</a>
                         
                         
                         <a class="collapse-item" href="{% url 'app:Depense_data'%}">Bon de sortie</a>
@@ -202,12 +202,12 @@
                     
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="{% url 'app:Depense_data'%}">
+                <a class="nav-link" href="{% url 'app:Sortie_data'%}">
                     <i class="fas fa-fw fa-chart-area"></i>
                     <span>Liste des depenses</span></a>
             </li>
             <li class="nav-item">
-                <a class="nav-link"  href="">
+                <a class="nav-link"  href="{% url 'app:Livre_Caisse'%}">
                     <i class="fas fa-fw fa-table"></i>
                     <span>Livre de caisse</span></a>
                     

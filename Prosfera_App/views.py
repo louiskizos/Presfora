@@ -25,8 +25,8 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from reportlab.platypus import Table, TableStyle
 from django.http import HttpResponse, FileResponse
-from .models import Depense  # Assure-toi que Depense est importé
 
+import random
 # Create your views here.
 
 
@@ -181,13 +181,14 @@ def change_password(request):
 
 @login_required
 def homePage(request):
+    
+    
     if request.user.is_authenticated:
         
-        soldes = Payement_Offrande.objects.aggregate(total=Sum('montant'))['total']
+        soldes = Payement_Offrande.objects.filter(type_payement="Entree").aggregate(total=Sum('montant'))['total']
+        
         soldes = Decimal(soldes) if soldes is not None else Decimal(0.0)
-        
-        
-        depense = Depense.objects.aggregate(total=Sum('montant'))['total']
+        depense = Payement_Offrande.objects.filter(type_payement="Sortie").aggregate(total=Sum('montant'))['total']
         depense = Decimal(depense) if depense is not None else Decimal(0.0)
         reste = soldes - depense
         montant_prevu = Prevoir.objects.aggregate(total=Sum('montant_prevus'))['total']
@@ -196,7 +197,7 @@ def homePage(request):
         context = {
             'Soldes': reste,
             'encaissement': soldes,
-            'Depense': depense,
+            'depense': depense,
             'Montant_prevu': montant_prevu,
         }
         
@@ -841,9 +842,9 @@ def  Sorte_Prevision_Data(request):
 @login_required
 def payementOffrandePage(request):
     # Récupération des objets Sorte_Offrande
-    
-    data = Sorte_Offrande.objects.all()
+    #data = Sorte_Offrande.objects.filter(descript_recette__description_recette__iexact="Les engagements des adhérents")
 
+    data = Sorte_Offrande.objects.exclude(descript_recette__description_recette="Engagement des adhérents")
     # Paginer les objets (5 éléments par page)
     paginator = Paginator(data, 6)
     page_number = request.GET.get('page')
@@ -888,6 +889,7 @@ def payement(request):
         # Récupérer les valeurs envoyées par le formulaire
         nom_offrande_id = request.POST.get('nom_offrande')  # L'ID de la recette
         departement = request.POST.get('departement')
+        type_payement = "Entree"
         montant = request.POST.get('montant')
         montant_lettre = num2words(montant, lang='fr', to='currency', currency='USD')
         motif = request.POST.get('motif')
@@ -931,6 +933,7 @@ def payement(request):
         payement_offrande = Payement_Offrande(
             nom_offrande=nom_offrande,  # Assigner l'objet Sorte_Offrande ici
             departement=departement,
+            type_payement=type_payement,
             montant=montant,
             montant_lettre=montant_lettre,
             motif = motif,
@@ -977,186 +980,129 @@ def  Payement_Offrande_Data(request):
 
 def depensePage(request, id):
     
-    sorte_offrande = get_object_or_404(Sorte_Offrande, num_compte=id)
-    total_montant = Payement_Offrande.objects.filter(nom_offrande=sorte_offrande).aggregate(
-        total_montant=Sum('montant')
-    )['total_montant'] or 0
-    
     current_date = datetime.now()
+ 
     formatted_date = current_date.strftime('%d-%m-%Y')
     formatted_anne = current_date.strftime('%Y')
-
-     
+    data = Sorte_Offrande.objects.get(id=id)
+    
     context = {
-         
-        'date_sortie' : formatted_date,
-        'annee_sortie' : formatted_anne,
-        'nom_offrande': sorte_offrande.nom_offrande,
-        'num_compte': sorte_offrande.num_compte,
-        'montant_total': total_montant,
-        
+        'data' : data,
+        'date_paiement' : formatted_date,
+        'annee_paiement' : formatted_anne,
         }
     page = 'depense/formulaire_depense.html'
     return render(request, page, context )
 
 def depenser(request):
     
-    context = {}
-
     if request.method == 'POST':
-        compte = request.POST.get('compte')
-        nom_compte = request.POST.get('nom_compte')
-        nom_beneficiaire = request.POST.get('nom_beneficiaire')
-        solde_str = request.POST.get('solde')
-        montant_str = request.POST.get('montant')
+        
+        # Récupérer les valeurs envoyées par le formulaire
+        nom_offrande_id = request.POST.get('nom_offrande')  # L'ID de la recette
+        departement = request.POST.get('departement')
+        type_payement = "Sortie"
+        montant = request.POST.get('montant')
+        montant_lettre = num2words(montant, lang='fr', to='currency', currency='USD')
         motif = request.POST.get('motif')
-        date_sortie_str = request.POST.get('date_sortie')
-        annee_str = request.POST.get('annee')
-
-        # Vérification si les champs sont vides
-        if not montant_str or not solde_str or not annee_str:
-            context['message_erreur'] = "Veuillez remplir tous les champs obligatoires."
-            context['num_compte'] = compte
-            context['nom_offrande'] = nom_compte
-            context['montant_total'] = solde_str
-            context['annee_sortie'] = annee_str
-            context['date_sortie'] = date_sortie_str
-            return render(request, 'depense/formulaire_depense.html', context)
-
+        date_payement = request.POST.get('date_payement')
+        annee = request.POST.get('annee')
+        
+        # Validation des données
         try:
-            # Conversion des valeurs en Decimal et en int, avec une vérification préalable
-            montant = Decimal(montant_str.replace(',', '.'))  # Assurez-vous de remplacer les virgules par des points
-            solde = Decimal(solde_str.replace(',', '.'))
-            annee = int(annee_str)  # Conversion de l'année en entier
-
-            current_date = datetime.now()
-            formatted_date = current_date.strftime('%Y-%m-%d')
-            date_sortie = formatted_date
-        except (ValueError, TypeError, decimal.InvalidOperation):
-            context['message_erreur'] = "Erreur de format dans les valeurs saisies."
-            context['num_compte'] = compte
-            context['nom_offrande'] = nom_compte
-            context['montant_total'] = solde_str
-            context['annee_sortie'] = annee_str
-            context['date_sortie'] = date_sortie_str
+            # Vérifier si l'ID de la recette existe dans la base de données
+            nom_offrande = Sorte_Offrande.objects.get(id=nom_offrande_id)
+        except Sorte_Offrande.DoesNotExist:
+            message_erreur = "Le nom d'offrande spécifiée n'existe pas."
+            context = {'message_erreur': message_erreur}
             return render(request, 'depense/formulaire_depense.html', context)
-
-        # Vérification du solde
-        if solde < montant:
-            context['message_erreur'] = "Compte insuffisant !"
-            context['num_compte'] = compte
-            context['nom_offrande'] = nom_compte
-            context['montant_total'] = solde
-            context['annee_sortie'] = annee
-            context['date_sortie'] = date_sortie
+        
+        # Vérification du montant (doit être un nombre décimal)
+        try:
+            montant = Decimal(montant)
+        except (ValueError,):
+            message_erreur = "Le montant n'est pas valide."
+            context = {'message_erreur': message_erreur}
             return render(request, 'depense/formulaire_depense.html', context)
-
-        # Conversion du montant en lettres
-        en_lettre = num2words(montant_str, lang='fr', to='currency', currency='USD')  
-        montant_lettre = en_lettre
-
-        # Création de la dépense
-        depense = Depense(
-            compte=compte,
-            nom_compte=nom_compte,
-            nom_beneficiaire=nom_beneficiaire,
+        
+        # Vérification de l'année (doit être un entier)
+        try:
+            annee = int(annee)
+        except ValueError:
+            message_erreur = "L'année n'est pas valide."
+            context = {'message_erreur': message_erreur}
+            return render(request, 'depense/formulaire_depense.html', context)
+        
+        # Vérifier la date de paiement (assurez-vous qu'elle est dans un format valide)
+        try:
+            date_payement = datetime.strptime(date_payement, '%d-%m-%Y').date()
+        except ValueError:
+            message_erreur = "La date de paiement n'est pas valide."
+            context = {'message_erreur': message_erreur}
+            return render(request, 'depense/formulaire_depense.html', context)
+        
+        # Création de l'enregistrement
+        decaisser_offrande = Payement_Offrande(
+            nom_offrande=nom_offrande,  # Assigner l'objet Sorte_Offrande ici
+            departement=departement,
+            type_payement=type_payement,
             montant=montant,
             montant_lettre=montant_lettre,
-            motif=motif,
-            date_sortie=date_sortie,
+            motif = motif,
+            date_payement=date_payement,
             annee=annee
         )
-        depense.save()
-
-        # Message de succès après enregistrement de la dépense
-        context['message_succes'] = "Sortie réussie avec succès !"
-        context['num_compte'] = compte
-        context['nom_offrande'] = nom_compte
-        context['montant_total'] = solde
-        context['annee_sortie'] = annee
-        context['date_sortie'] = date_sortie
-
+        
+        # Sauvegarde de l'enregistrement
+        decaisser_offrande.save()
+        message_succes = "Decaissement réussi avec succès !"
+        context = {'message_succes': message_succes}
         return render(request, 'depense/formulaire_depense.html', context)
+    
+    else:
+        message_erreur = "Échec du paiement !"
+        return render(request, 'depense/formulaire_depense.html', {'message_erreur': message_erreur})
 
-    return render(request, 'depense/formulaire_depense.html', context)
 
+    
 
 @login_required
 def depense_data(request):
-    # Récupération des données agrégées
-    data = Depense.objects.values('nom_beneficiaire', 'date_sortie','motif').annotate(montant_total=Sum('montant')).order_by('nom_beneficiaire', 'date_sortie','motif')
-
-    paginator = Paginator(data, 5)
+    
+    data = Payement_Offrande.objects.filter(type_payement="Sortie")
+    # Paginer les objets (5 éléments par page)
+    paginator = Paginator(data, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Ajouter un numéro d'ordre dynamique
-    for index, item in enumerate(page_obj, start=1):
-        item['numero_ordre'] = index
+    # Calculer un numéro d'ordre dynamique pour chaque objet sur la page
+    for index, objet in enumerate(page_obj, start=1):  # `start=1` commence l'index à 1
+        objet.numero_ordre = index  # Assigner le numéro d'ordre à chaque objet
 
-    # Préparer le contexte
+    # Passer les objets à la template
     context = {
-        'data': page_obj,
-        # Tu peux ajouter d'autres informations au contexte ici si nécessaire
+        'data': page_obj
     }
 
     # Rendre la template
     return render(request, 'depense/data_depense.html', context)
 
+
 @login_required
 def Sortie_Data(request):
-    
-    # Récupération des montants des payements d'offrande
-    data = Payement_Offrande.objects.values(
-        'nom_offrande__id',
-        'nom_offrande__nom_offrande',
-        'nom_offrande__num_compte'
-    ).annotate(
-        total_montant=Sum('montant')
-    )
+    # Récupérer les objets avec type 'Sortie' triés par date
+    data = Payement_Offrande.objects.filter(type_payement="Sortie").order_by('date_payement')
 
-    # Récupération des soldes de dépenses
-    soldes = Depense.objects.values(
-        'compte',
-        'nom_compte'
-    ).annotate(
-        montant_total=Sum('montant')
-    ).order_by('compte', 'nom_compte')
-
-    # Créer un dictionnaire pour accéder facilement aux soldes par compte/nom_compte
-    soldes_dict = {f"{solde['compte']}_{solde['nom_compte']}": solde['montant_total'] for solde in soldes}
-
-    # Calculer la différence entre les offrandes et les soldes des dépenses
-    result = []
-    for off in data:
-        # Créer une clé pour retrouver le solde associé
-        key = f"{off['nom_offrande__num_compte']}_{off['nom_offrande__nom_offrande']}"
-        
-        # Chercher si ce compte existe dans les soldes
-        #depense_montant = soldes_dict.get(key, 0.0)  # Utiliser 0.0 si pas de correspondance
-        depense_montant = soldes_dict.get(key, Decimal('0.0'))
-        # Calculer la différence (offrande - dépense)
-        difference = off['total_montant'] - depense_montant
-        
-        # Ajouter cette différence dans le résultat
-        result.append({
-            'nom_offrande': off['nom_offrande__nom_offrande'],
-            'num_compte': off['nom_offrande__num_compte'],
-            'total_montant': off['total_montant'],
-            'depense_montant': depense_montant,
-            'difference': difference
-        })
-
-    # Paginer les objets (5 éléments par page)
-    paginator = Paginator(result, 5)
+    # Pagination des données traitées (5 éléments par page)
+    paginator = Paginator(data, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
+
     context = {
-        'data': page_obj
+        'data': page_obj  # Contient des dicts avec 'op' et 'cumulative_sum'
     }
 
-    # Rendre la page avec les données paginées et numérotées
+    # Rendre la page avec les données paginées
     return render(request, 'depense/sortie_data.html', context)
 
 
@@ -1164,15 +1110,15 @@ def bonSortiePage(request, nom):
     try:
         nom_beneficiaire_cible = nom  # Utilisez la variable 'nom' de votre requête initiale
         
-        # Filtrer et grouper par nom_beneficiaire, puis calculer le montant total par bénéficiaire
-        data_compte = Depense.objects.filter(nom_beneficiaire=nom_beneficiaire_cible).order_by('nom_beneficiaire', 'date_sortie','motif').values('nom_beneficiaire', 'nom_compte','compte').annotate(
-            montant_total=Sum('montant'),).order_by('nom_beneficiaire', 'nom_compte','compte')
+        # # Filtrer et grouper par nom_beneficiaire, puis calculer le montant total par bénéficiaire
+        # data_compte = Payement_Offrande.objects.filter(departement=nom_beneficiaire_cible).order_by('departement', 'date_payement','motif').values('nom_beneficiaire', 'nom_compte','compte').annotate(
+        #     montant_total=Sum('montant'),).order_by('nom_beneficiaire', 'nom_compte','compte')
         
-        data = Depense.objects.filter(nom_beneficiaire=nom_beneficiaire_cible).order_by('-date_sortie').values('nom_beneficiaire').annotate(
-            montant_total=Sum('montant')
-        ).order_by('nom_beneficiaire')
-        
-        context = {'data_compte': data_compte, 'data':data}
+        # data = Payement_Offrande.objects.filter(departement=nom_beneficiaire_cible).order_by('date_payement').values('departement').annotate(
+        #     montant_total=Sum('montant')
+        # ).order_by('nom_beneficiaire')
+        data = Payement_Offrande.objects.filter(departement=nom_beneficiaire_cible)
+        context = { 'data':data}
         page = 'rapport/bon_sortie.html'
         return render(request, page, context)
         
@@ -1190,7 +1136,7 @@ def bonSortiePage(request, nom):
 def souscrire_ahadi_Page(request):
     
     data = Sorte_Offrande.objects.filter(
-    descript_recette__description_recette__icontains="Les encadrements des adhérents"
+    descript_recette__description_recette__icontains="Engagement des adhérents"
     )
    
     # Paginer les objets (5 éléments par page)
@@ -1213,8 +1159,8 @@ def souscrire_ahadi_Page(request):
 @login_required
 def payement_ahadi_Page(request):
     
+    #data = Sorte_Offrande.objects.all()
     data = Ahadi.objects.all()
-   
     # Paginer les objets (5 éléments par page)
     paginator = Paginator(data, 6)
     page_number = request.GET.get('page')
@@ -1253,15 +1199,69 @@ def ahadiformulairePage(request, id):
 
 @login_required
 def detailPage(request, id):
-  
-    data = Ahadi.objects.get(id=id)
+
+    # data2 = get_object_or_404(Ahadi, id=id)
+    # data_queryset = Payement_Offrande.objects.filter(nom_offrande=data2.nom_offrande)
+
+    # # Calcul des sommes cumulées
+    # cumulative_sums = []
+    # current_sum = 0
+
+    # for item in data_queryset:
+    #     if item.type_payement == 'Sortie':
+    #         current_sum -= item.montant or 0
+    #     else:
+    #         current_sum += item.montant or 0
+    #     cumulative_sums.append(current_sum)
+
+    # # Préparer les données traitées avec somme cumulative
+    # processed_data = []
+    # for i, item in enumerate(data_queryset):
+    #     processed_data.append({
+    #         'op': item,
+    #         'cumulative_sum': cumulative_sums[i]
+    #     })
+
+    # # Pagination des données traitées (5 éléments par page)
+    # paginator = Paginator(processed_data, 15)
+    # page_number = request.GET.get('page')
+    # page_obj = paginator.get_page(page_number)
+    # difference = data2.montant - processed_data.first().montant if processed_data.exists() else 0
+    # context = {
+    #     'data': page_obj,
+    #     'ahadi': data2,
+    #     'reste': difference
+          
+    # }
+    data2 = get_object_or_404(Ahadi, id=id)
+    data = Payement_Offrande.objects.filter(nom_offrande=data2.nom_offrande)
     
+    # Calcul des sommes cumulées
+    cumulative_sums = []
+    current_sum = 0
+
+    for item in data:
+        # if item.type_payement == 'Entree':
+        #     current_sum -= item.montant or 0
+        # else:
+        current_sum += item.montant or 0
+        cumulative_sums.append(current_sum)
+
+    # Préparer les données traitées avec somme cumulative
+    processed_data = []
+    for i, item in enumerate(data):
+        processed_data.append({
+            'op': item,
+            'cumulative_sum': cumulative_sums[i]
+        })
+    difference = data2.montant - data.first().montant if data.exists() else 0
+
     context = {
-        'data' : data,
-        
-        }
-    page = 'ahadi/detail.html'
-    return render(request, page, context )
+        'data': processed_data,
+        'ahadi': data2,
+        'reste': difference
+    }
+    return render(request, 'ahadi/detail.html', context)
 
 @login_required
 def Formulaire_Ahadi_Payement(request, id):
@@ -1271,7 +1271,7 @@ def Formulaire_Ahadi_Payement(request, id):
     # Tu peux aussi formater la date selon ton besoin
     formatted_date = current_date.strftime('%d-%m-%Y')
     formatted_anne = current_date.strftime('%Y')
-    data = Sorte_Offrande.objects.get(id=id)
+    data = Ahadi.objects.get(id=id, )
     
     context = {
         'data' : data,
@@ -1291,6 +1291,7 @@ def payement_ahadi(request):
         # Récupérer les valeurs envoyées par le formulaire
         nom_offrande_id = request.POST.get('nom_offrande')  # L'ID de la recette
         departement = request.POST.get('departement')
+        type_payement = "Entree"
         montant = request.POST.get('montant')
         montant_lettre = num2words(montant, lang='fr', to='currency', currency='USD')
         motif = request.POST.get('motif')
@@ -1335,6 +1336,7 @@ def payement_ahadi(request):
             nom_offrande=nom_offrande,  # Assigner l'objet Sorte_Offrande ici
             departement=departement,
             montant=montant,
+            type_payement=type_payement,
             montant_lettre=montant_lettre,
             motif = motif,
             date_payement=date_payement,
@@ -1420,53 +1422,88 @@ def souscrire(request):
         message_erreur = "Échec de la souscription !"
         return render(request, 'ahadi/formulaire_ahadi.html', {'message_erreur': message_erreur})
 
+def data_payement_ahadi(request):
+      
+    #data = Payement_Offrande.objects.all()
 
-@login_required
-def  liste_souscription(request): 
-
-    # Récupération des objets Sorte_Offrande
-    data = Ahadi.objects.all()
+    data = Payement_Offrande.objects.filter(nom_offrande__descript_recette__description_recette="Engagement des adhérents")
 
     # Paginer les objets (5 éléments par page)
     paginator = Paginator(data, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Calculer un numéro d'ordre dynamique pour chaque objet sur la page
-    for index, objet in enumerate(page_obj, start=1):  # `start=1` commence l'index à 1
-        objet.numero_ordre = index  # Assigner le numéro d'ordre à chaque objet
-
-    # Passer les objets à la template
+   
+    for index, objet in enumerate(page_obj, start=1): 
+        objet.numero_ordre = index 
     context = {
         'data': page_obj
     }
 
-    # Rendre la page avec les données paginées et numérotées
+    page = 'rapport/recu_data.html'
+    return render(request, page, context )
+
+
+@login_required
+def liste_souscription(request):
+    
+    
+    search_query = request.GET.get('q', '')
+
+    # Filtrer selon la recherche si elle existe
+    souscription_ahadi_list = Ahadi.objects.all()
+    if search_query:
+        souscription_ahadi_list = souscription_ahadi_list.filter(nom_offrande__nom_offrande__icontains=search_query)
+
+    # Trier les résultats (par exemple par date ou montant)
+    souscription_ahadi_list = souscription_ahadi_list.order_by('date_ahadi')  # ou 'montant', ou autre champ
+
+    # Calcul de la somme des montants des résultats filtrés
+    total_montant = souscription_ahadi_list.aggregate(total=Sum('montant'))['total'] or 0
+
+    # Pagination (5 objets par page)
+    paginator = Paginator(souscription_ahadi_list, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Ajouter un numéro d'ordre
+    start_index = page_obj.start_index()
+    for index, objet in enumerate(page_obj, start=start_index):
+        objet.numero_ordre = index
+
+    context = {
+        'data': page_obj,
+        'total_montant': total_montant,
+        'search_query': search_query,
+    }
+
     return render(request, 'ahadi/liste_ahadi.html', context)
 
+import random
 
 def recuPage(request, id):
     
     data = Payement_Offrande.objects.get(id=id)
-    
-    context = {'data' : data}
+    random_nombre = random.randint(1000, 9999)
+    context = {'data' : data, 'rand' : random_nombre}
     page = 'rapport/recu.html'
     return render(request, page, context )
 
+
 def recu_dataPage(request):
-        # Récupération des objets Sorte_Offrande
-    data = Payement_Offrande.objects.all()
+      
+    #data = Payement_Offrande.objects.all()
+
+    data = Payement_Offrande.objects.exclude(nom_offrande__descript_recette__description_recette="Engagement des adhérents")
 
     # Paginer les objets (5 éléments par page)
     paginator = Paginator(data, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Calculer un numéro d'ordre dynamique pour chaque objet sur la page
-    for index, objet in enumerate(page_obj, start=1):  # `start=1` commence l'index à 1
-        objet.numero_ordre = index  # Assigner le numéro d'ordre à chaque objet
-
-    # Passer les objets à la template
+   
+    for index, objet in enumerate(page_obj, start=1): 
+        objet.numero_ordre = index 
     context = {
         'data': page_obj
     }
@@ -1485,33 +1522,41 @@ def custom_404(request, exception):
 ############ DATA POUR LES GRAPHIQUES ##############
 
 
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from django.db.models import Sum
+from .models import Payement_Offrande, Prevoir
+
 @api_view(['GET'])
 def get_presfora_data(request):
-    
-    # Obtenez les paiements par année
-    payements = Payement_Offrande.objects.values('annee').annotate(total_payement=Sum('montant')).order_by('annee')
-    previsions = Prevoir.objects.values('annee_prevus').annotate(total_prevision=Sum('montant_prevus')).order_by('annee_prevus')
-    depenses = Depense.objects.values('annee').annotate(total_depense=Sum('montant')).order_by('annee')
-    # Sérialiser les données de Payement_Offrande
-    payements_data = [{"annee": p['annee'], "total_payement": p['total_payement']} for p in payements]
-    
-    annees = Payement_Offrande.objects.values('annee').order_by('annee')
-    
-    depenses_data = [{"annee": p['annee'], "total_depense": p['total_depense']} for p in depenses]
-    # Sérialiser les données de Prevoir
-    previsions_data = [{"annee_prevus": p['annee_prevus'], "total_prevision": p['total_prevision']} for p in previsions]
-    
-    # Préparer les données à envoyer au frontend
-    labels = list(set([p['annee'] for p in payements] + [p['annee'] for p in annees] + [p['annee'] for p in depenses] + [p['annee_prevus'] for p in previsions]))
-    labels.sort()
 
-# Requête qui calcule la somme des montants groupés par nom_offrande  
-    
+    # Entrées (exclut les sorties)
+    payement_entree = Payement_Offrande.objects.exclude(type_payement='Entreenom_offrande')\
+        .values('annee').annotate(total_payement=Sum('montant')).order_by('annee')
+
+    # Sorties
+    payement_sortie = Payement_Offrande.objects.filter(type_payement='Sortie')\
+        .values('annee').annotate(total_depense=Sum('montant')).order_by('annee')
+
+    # Prévisions
+    previsions = Prevoir.objects.values('annee_prevus')\
+        .annotate(total_prevision=Sum('montant_prevus')).order_by('annee_prevus')
+
+    # Sérialisation
+    payements_data = [{"annee": p['annee'], "total_payement": p['total_payement']} for p in payement_entree]
+    depenses_data = [{"annee": p['annee'], "total_depense": p['total_depense']} for p in payement_sortie]
+    previsions_data = [{"annee_prevus": p['annee_prevus'], "total_prevision": p['total_prevision']} for p in previsions]
+
+    # Toutes les années uniques
+    labels = sorted(list(set(
+        [p['annee'] for p in payement_entree] +
+        [p['annee'] for p in payement_sortie] +
+        [p['annee_prevus'] for p in previsions]
+    )))
+
     data = {
-        #'labels': ["2014", "2015", "2016", ],
-        'labels' : [next((item['annee'] for item in annees if item['annee'] == label), 0) for label in labels],
+        'labels': labels,
         'datasets': [
-            
             {
                 'label': "Solde total",
                 'lineTension': 0.3,
@@ -1525,11 +1570,10 @@ def get_presfora_data(request):
                 'pointHoverBorderColor': "rgba(78, 115, 223, 1)",
                 'pointHitRadius': 10,
                 'pointBorderWidth': 2,
-                #'data': [0, 10000, 5000, 15000, 10000, 20000, 15000, 25000, 20000, 30000, 25000, 40000],
                 'data': [next((item['total_payement'] for item in payements_data if item['annee'] == label), 0) for label in labels],
             },
             {
-                'label': "Depense total",
+                'label': "Dépense totale",
                 'lineTension': 0.3,
                 'backgroundColor': "rgba(78, 115, 223, 0.05)",
                 'borderColor': "rgb(211, 16, 81)",
@@ -1541,14 +1585,13 @@ def get_presfora_data(request):
                 'pointHoverBorderColor': "rgb(211, 16, 81)",
                 'pointHitRadius': 10,
                 'pointBorderWidth': 2,
-                #'data': [0, 1000, 500, 1000, 1000, 2000, 0, 5000, 20000, 30000, 25000, 40000],
-                'data': [next((item['total_depense'] for item in depenses_data if item['annee'] == label), 0) for label in labels],    
-            }, 
+                'data': [next((item['total_depense'] for item in depenses_data if item['annee'] == label), 0) for label in labels],
+            },
             {
-                'label': "Prevision total",
+                'label': "Prévision totale",
                 'lineTension': 0.3,
                 'backgroundColor': "rgba(78, 115, 223, 0.05)",
-                'borderColor' : "#858796",
+                'borderColor': "#858796",
                 'pointRadius': 3,
                 'pointBackgroundColor': "#858796",
                 'pointBorderColor': "#858796",
@@ -1557,7 +1600,6 @@ def get_presfora_data(request):
                 'pointHoverBorderColor': "#858796",
                 'pointHitRadius': 10,
                 'pointBorderWidth': 2,
-                #'data': [0, 1000, 500, 1000, 1000, 20000, 15000, 25000, 20000, 30000, 25000, 0]
                 'data': [next((item['total_prevision'] for item in previsions_data if item['annee_prevus'] == label), 0) for label in labels],
             },
         ]
@@ -1572,6 +1614,7 @@ def recu_pdf(request,pdf_id):
     
     try:
         data = Payement_Offrande.objects.get(id=pdf_id)
+        num_alea = random.randint(1000,9999)
     except Payement_Offrande.DoesNotExist:
         return HttpResponse("Payement_Offrande ne pas la", status=404)  # Gestion de l'erreur si l'objet n'existe pas
 
@@ -1599,7 +1642,7 @@ def recu_pdf(request,pdf_id):
     montant_lettre = en_lettre
 
     # Titre du reçu (générer un numéro de reçu unique)
-    receipt_number = f"0001/{datetime.now().year}"  # Exemple de numéro de reçu
+    receipt_number = f"{num_alea}/CBCA/{datetime.now().year}"  # Exemple de numéro de reçu
     p.setFont("Helvetica-Bold", 16)
     p.drawString(220, height - 130, f"REÇU N° {receipt_number}")
 
@@ -1629,60 +1672,85 @@ def recu_pdf(request,pdf_id):
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename=f"recu de {data.departement}.pdf")
 
-from collections import defaultdict
+
 @login_required
-def  bilan(request): 
+def bilan(request):
+    # Regrouper les prévisions par groupe + année
+    grouped = (
+        Prevoir.objects
+        .values(
+            'descript_prevision__num_ordre',
+            'descript_prevision__description_prevision',
+            'annee_prevus'
+        )
+        .annotate(total_prevus=Sum('montant_prevus'))
+        .order_by('descript_prevision__num_ordre', 'annee_prevus')
+    )
 
-    # # Récupération des objets Sorte_Offrande
-    # #data_2 = Prevoir.objects.all()
-    # #data = Prevoir.objects.values('descript_prevision__description_prevision','descript_prevision__num_ordre','annee_prevus').annotate(total_prevus=Sum('montant_prevus'))
+    # Récupérer tous les objets pour les détails (nom, compte, etc.)
+    data_2 = Prevoir.objects.select_related('descript_prevision').all()
 
-    #     # Récupérer les données agrégées (somme des montants par descript_prevision et annee_prevus)
-    # data = Prevoir.objects.values(
-    #         'descript_prevision__description_prevision',
-    #         'descript_prevision__num_ordre',
-    #         'annee_prevus'
-    #     ).annotate(total_prevus=Sum('montant_prevus'))
+    combined_data = []
+    for group in grouped:
+        related_data = data_2.filter(
+            descript_prevision__num_ordre=group['descript_prevision__num_ordre'],
+            annee_prevus=group['annee_prevus']
+        )
+        combined_data.append({
+            'num_ordre': group['descript_prevision__num_ordre'],
+            'description_prevision': group['descript_prevision__description_prevision'],
+            'annee_prevus': group['annee_prevus'],
+            'total_prevus': group['total_prevus'],
+            'related_data': related_data
+        })
 
-    #     # Récupérer toutes les données complètes (objets Prevoir)
-    # data_2 = Prevoir.objects.all()
-
-    #     # Combiner les deux ensembles de données
-    #     # Créer une liste de dictionnaires avec les données agrégées et les données complètes
-    # combined_data = []
-    # for item in data:
-    #         # Trouver tous les objets Prevoir qui correspondent à l'agrégation (en fonction de descript_prevision et annee_prevus)
-    #     related_data = data_2.filter(
-    #             descript_prevision__description_prevision=item['descript_prevision__description_prevision'],
-    #             annee_prevus=item['annee_prevus']
-    #         )
-    #         # Ajouter les données complètes à chaque agrégation
-    #     combined_data.append({
-    #             'description_prevision': item['descript_prevision__description_prevision'],
-    #             'num_ordre': item['descript_prevision__num_ordre'],
-    #             'annee_prevus': item['annee_prevus'],
-    #             'total_prevus': item['total_prevus'],
-    #             'related_data': related_data  # Données complètes associées
-    #         })
-
-
-    # # Passer les objets à la template
-    # context = {
-    #     'data': combined_data
-    # }
-    annee_cible = 2025
-    previsions = Prevoir.objects.filter(annee_prevus=annee_cible).order_by('descript_prevision')
-    context = {'previsions': previsions}
-
-    # Rendre la page avec les données paginées et numérotées
+    context = {
+        'data': combined_data
+    }
     return render(request, 'rapport/bilan.html', context)
 
 
+def livre_de_caisse(request):
 
-def bon_sorti_pdf(request, id, pdf_id):
+    #data = Payement_Offrande.objects.all()
+    data_queryset = Payement_Offrande.objects.all().order_by('nom_offrande')
+
+    # Calcul des sommes cumulées
+    cumulative_sums = []
+    current_sum = 0
+
+    for item in data_queryset:
+        if item.type_payement == 'Sortie':
+            current_sum -= item.montant or 0
+        else:
+            current_sum += item.montant or 0
+        cumulative_sums.append(current_sum)
+
+    # Préparer les données traitées avec somme cumulative
+    processed_data = []
+    for i, item in enumerate(data_queryset):
+        processed_data.append({
+            'op': item,
+            'cumulative_sum': cumulative_sums[i]
+        })
+
+    # Pagination des données traitées (5 éléments par page)
+    paginator = Paginator(processed_data, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'data': page_obj  # Contient des dicts avec 'op' et 'cumulative_sum'
+    }
+
+    return render(request, 'rapport/livre_caisse.html', context)
+
+
+def bon_sorti_pdf(request, pdf_id):
     try:
-        data = Depense.objects.get(id=id)
-    except Depense.DoesNotExist:
+        data = Payement_Offrande.objects.get(id=pdf_id)
+        num_alea = random.randint(1000,9999)
+    except Payement_Offrande.DoesNotExist:
         return HttpResponse("Pas de donnée sur les dépenses", status=404)
 
     # Initialisation du buffer et du canvas PDF
@@ -1703,27 +1771,28 @@ def bon_sorti_pdf(request, id, pdf_id):
     
     # Montant en haut à droite
     p.setFont("Helvetica-Bold", 12)
-    p.drawString(width - 160, height - 50, f"Date : {data.date_sortie}")
+    p.drawString(width - 160, height - 50, f"Date : {data.date_payement}")
     
     # Titre du reçu
     p.setFont("Helvetica-Bold", 16)
-    p.drawString(width / 2 - 150, height - 120, "BON DE SORTIE DE CAISSE N° 0001/2025")
+    p.drawString(width / 2 - 150, height - 120, f"BON DE SORTIE DE CAISSE N° {num_alea}/CBCA/{datetime.now().year}")
+    
     en_lettre = num2words(data.montant, lang='fr', to='currency', currency='USD')  
     montant_lettre = en_lettre
     # Détails du reçu
     p.setFont("Helvetica", 12)
-    p.drawString(50, height - 150, f"Nom du bénéficiaire : {data.nom_beneficiaire}")
+    p.drawString(50, height - 150, f"Nom du bénéficiaire : {data.departement}")
     p.drawString(50, height - 170, f"Montant (en lettres) : {montant_lettre}")
     p.drawString(50, height - 190, f"Motif du paiement : {data.motif}")
     
     # Tableau avec Table et TableStyle
     table_data = [
         ['Numéro du compte', 'Description', 'Montant'],  # En-têtes
-        [data.compte.nom_offrande.num_compte, data.compte.nom_offrande, data.montant]  # Valeurs
+        [data.nom_offrande.num_compte, data.nom_offrande, data.montant]  # Valeurs
     ]
     
     # Créer l'objet Table
-    table = Table(table_data, colWidths=[150, 150, 150], rowHeights=20)
+    table = Table(table_data, colWidths=[160, 160, 160], rowHeights=30)
     
     # Appliquer le style au tableau
     style = TableStyle([
@@ -1758,7 +1827,7 @@ def bon_sorti_pdf(request, id, pdf_id):
     p.save()
     
     buffer.seek(0)
-    return FileResponse(buffer, as_attachment=True, filename=f"Bon_de_sortie_{data.nom_beneficiaire}.pdf")
+    return FileResponse(buffer, as_attachment=True, filename=f"Bon_de_sortie_{data.departement}.pdf")
 
 
 

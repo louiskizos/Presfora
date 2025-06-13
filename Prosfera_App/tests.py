@@ -14,3 +14,5 @@ from django.test import TestCase
 
 ##### git push -u master
 ##### Lien : https://prosphora.pythonanywhere.com source /home/Prosphora/.virtualenvs/venv/bin/activate
+###### git config --global user.name "Ton Nom"
+###### git config --global user.email "ton.email@example.com"

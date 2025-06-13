@@ -41,16 +41,16 @@
     </div>
     <h3>BON DE SORTIE DE CAISSE N° 0001/2025</h3>
     <br>
-    <p><strong>Nom du bénéficiaire :</strong>{% for data in data %}
-        {{data.nom_beneficiaire}}
-        {{data.motif}}
-        {% endfor %}
+    <p><strong>Nom du bénéficiaire : </strong>{% for data in data %}
+        {{data.departement}}
+        {{data.motifs}}
+        
     </p>
     
-    <p><strong>Montant (en lettres) :</strong><small> {{data.montant_lettre}}</small></p>
+    <p><strong>Montant (en lettres) : </strong> {{data.montant_lettre}}<small> </small></p>
     
-    <p><strong>Motif du paiement :</strong><small> {{data.motif}}</small> </p>
-
+    <p><strong>Motif du paiement : </strong> {{data.motif}} </p>
+{% endfor %}
     <table>
         <thead>
             <tr>
@@ -60,11 +60,11 @@
             </tr>
         </thead>
         <tbody>
-            {% for data in data_compte %}
+            {% for data in data %}
             <tr>
-                <td>{{data.compte}} </td>
-                <td>{{data.nom_compte}} </td>
-                <td>{{data.montant_total}} $</td>
+                <td>{{data.nom_offrande.num_compte}} </td>
+                <td>{{data.nom_offrande}} </td>
+                <td>{{data.montant}} $</td>
             </tr>
          {% endfor %}
         </tbody>

@@ -15,6 +15,7 @@ urlpatterns = [
     path('Profil', profil, name='Profil'),
     path('Deconnexion', logout, name='Deconnexion'),
     path('Modification', updatePassword, name='Modification'),
+
     ############ GROUPE OFFRANDES ######################
     path('Groupe_Offrandes', groupeOffrandePage, name='Groupe_Offrandes'),
     path('CreateGroupe', CreateGroupe, name='CreateGroupe'),
@@ -53,8 +54,8 @@ urlpatterns = [
     path('Payement_Offrande_Data',Payement_Offrande_Data, name='Payement_Offrande_Data'),
     
     ################ Depense   #########################
-    path('Depense/<int:id>/', depensePage, name='Depense'),
-    path('Depenser', depenser, name='Depenser'),
+    path('Formulaire_Depense/<uuid:id>/', depensePage, name='Depense'),
+    path('Decaisser', depenser, name='Decaisser'),
     path('Depense_data', depense_data, name='Depense_data'),
     path('Sortie_data', Sortie_Data, name='Sortie_data'),
     
@@ -67,16 +68,18 @@ urlpatterns = [
     path('Details/<uuid:id>/', detailPage, name='Details'),
     path('Formulaire_Ahadi_Payement/<uuid:id>/', Formulaire_Ahadi_Payement, name='Formulaire_Ahadi_Payement'),
     path('Payement_ahadi', payement_ahadi, name='Payement_ahadi'),
+    path('Payement_ahadi_data', data_payement_ahadi, name='Payement_ahadi_data'),
     ############## Recu #########################
     path('Recu/<uuid:id>/', recuPage, name='Recu'),
+    path('Recu_ahadi/<uuid:id>/', recuPage, name='Recu'),
     path('Recu_data', recu_dataPage, name='Recu_data'),
     path('Bon_Sortie/<str:nom>/', bonSortiePage, name='Bon_Sortie'),
     path('Bilan', bilan, name='Bilan'),
     ############# Rapport PDF #####################
     path('Recu_pdf/<uuid:pdf_id>/', recu_pdf, name='Recu_pdf'),
     path('Bon_sorti_pdf/<uuid:pdf_id>/', bon_sorti_pdf, name='generate_sorti_pdf'),
+    path('Livre_Caisse', livre_de_caisse, name='Livre_Caisse'),
     path('test', Pagination_Search_Groupe_Offrande, name='test'),
-    
     #################### DATA API #######################
     path('api/presfora-data/', views.get_presfora_data, name='get_presfora_data'),
     

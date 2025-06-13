@@ -33,6 +33,7 @@ class Payement_Offrande(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     nom_offrande = models.ForeignKey(Sorte_Offrande, on_delete=models.CASCADE)
     departement = models.CharField(max_length=100)
+    type_payement = models.CharField(max_length=100)
     montant = models.DecimalField(max_digits=15, decimal_places=2)
     montant_lettre = models.CharField(max_length=255)
     motif = models.CharField(max_length=255)
@@ -52,17 +53,17 @@ class Ahadi(models.Model):
     annee = models.IntegerField()
   
     
-class Depense(models.Model):
+# class Depense(models.Model):
     
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    compte = models.CharField(max_length=100)
-    nom_compte = models.CharField(max_length=100)
-    nom_beneficiaire = models.CharField(max_length=100)
-    montant = models.DecimalField(max_digits=15, decimal_places=2)
-    montant_lettre = models.CharField(max_length=255)
-    motif = models.CharField(max_length=255)
-    date_sortie = models.DateField()
-    annee = models.IntegerField()
+#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+#     montant_stock = models.ForeignKey(Payement_Offrande, on_delete=models.CASCADE)
+#     #nom_compte = models.CharField(max_length=100)
+#     nom_beneficiaire = models.CharField(max_length=100)
+#     montant = models.DecimalField(max_digits=15, decimal_places=2)
+#     montant_lettre = models.CharField(max_length=255)
+#     motif = models.CharField(max_length=255)
+#     date_sortie = models.DateField()
+#     annee = models.IntegerField()
  
 class Groupe_Previsions(models.Model):
     
