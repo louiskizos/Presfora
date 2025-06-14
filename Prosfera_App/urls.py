@@ -79,6 +79,7 @@ urlpatterns = [
     path('Recu_pdf/<uuid:pdf_id>/', recu_pdf, name='Recu_pdf'),
     path('Bon_sorti_pdf/<uuid:pdf_id>/', bon_sorti_pdf, name='generate_sorti_pdf'),
     path('Livre_Caisse', livre_de_caisse, name='Livre_Caisse'),
+    path('Bilan_pdf', bilan_pdf, name='Bilan_pdf'),
     path('test', Pagination_Search_Groupe_Offrande, name='test'),
     #################### DATA API #######################
     path('api/presfora-data/', views.get_presfora_data, name='get_presfora_data'),

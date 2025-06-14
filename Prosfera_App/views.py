@@ -1,4 +1,4 @@
-import decimal
+
 from django.shortcuts import  render, redirect, get_object_or_404
 from django.contrib.auth.models import User, auth
 from django.contrib.auth.decorators import login_required
@@ -13,20 +13,24 @@ from django.contrib import messages
 from datetime import datetime
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .serializers import PayementOffrandeSerializer, PrevoirSerializer
 import re
 import io
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import landscape, A5
-from django.http import HttpResponse
 from num2words import num2words
 from io import BytesIO
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from reportlab.platypus import Table, TableStyle
 from django.http import HttpResponse, FileResponse
-
 import random
+from django.contrib.auth.decorators import login_required
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Image
+
+
 # Create your views here.
 
 
@@ -1110,15 +1114,10 @@ def bonSortiePage(request, nom):
     try:
         nom_beneficiaire_cible = nom  # Utilisez la variable 'nom' de votre requête initiale
         
-        # # Filtrer et grouper par nom_beneficiaire, puis calculer le montant total par bénéficiaire
-        # data_compte = Payement_Offrande.objects.filter(departement=nom_beneficiaire_cible).order_by('departement', 'date_payement','motif').values('nom_beneficiaire', 'nom_compte','compte').annotate(
-        #     montant_total=Sum('montant'),).order_by('nom_beneficiaire', 'nom_compte','compte')
-        
-        # data = Payement_Offrande.objects.filter(departement=nom_beneficiaire_cible).order_by('date_payement').values('departement').annotate(
-        #     montant_total=Sum('montant')
-        # ).order_by('nom_beneficiaire')
         data = Payement_Offrande.objects.filter(departement=nom_beneficiaire_cible)
-        context = { 'data':data}
+        random_nombre = random.randint(1000, 9999)
+        context = {'data' : data, 'rand' : random_nombre}
+        
         page = 'rapport/bon_sortie.html'
         return render(request, page, context)
         
@@ -1672,10 +1671,9 @@ def recu_pdf(request,pdf_id):
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename=f"recu de {data.departement}.pdf")
 
-
 @login_required
 def bilan(request):
-    # Regrouper les prévisions par groupe + année
+    # Regrouper les prévisions par groupe + année avec la somme des montants
     grouped = (
         Prevoir.objects
         .values(
@@ -1687,7 +1685,7 @@ def bilan(request):
         .order_by('descript_prevision__num_ordre', 'annee_prevus')
     )
 
-    # Récupérer tous les objets pour les détails (nom, compte, etc.)
+    # Précharger les objets liés pour éviter les requêtes multiples dans la boucle
     data_2 = Prevoir.objects.select_related('descript_prevision').all()
 
     combined_data = []
@@ -1704,9 +1702,22 @@ def bilan(request):
             'related_data': related_data
         })
 
+    # Paginer les résultats (1 par page ici, tu peux ajuster selon les besoins)
+    paginator = Paginator(combined_data, 1)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Ajouter un numéro d'ordre visible pour chaque élément paginé
+    # Ajouter le numéro d'ordre global
+    start_index = page_obj.start_index()  # Le premier index de cette page (ex. 11 si on est page 2 avec 10 par page)
+
+    for index, item in enumerate(page_obj.object_list, start=start_index):
+        item['numero_ordre'] = index
+
     context = {
-        'data': combined_data
+        'data': page_obj
     }
+
     return render(request, 'rapport/bilan.html', context)
 
 
@@ -1828,6 +1839,112 @@ def bon_sorti_pdf(request, pdf_id):
     
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename=f"Bon_de_sortie_{data.departement}.pdf")
+
+
+
+
+@login_required
+def bilan_pdf(request):
+    try:
+        grouped = (
+            Prevoir.objects
+            .values(
+                'descript_prevision__num_ordre',
+                'descript_prevision__description_prevision',
+                'annee_prevus'
+            )
+            .annotate(total_prevus=Sum('montant_prevus'))
+            .order_by('descript_prevision__num_ordre', 'annee_prevus')
+        )
+
+        data_2 = Prevoir.objects.select_related('descript_prevision').all()
+
+        combined_data = []
+        for group in grouped:
+            related_data = data_2.filter(
+                descript_prevision__num_ordre=group['descript_prevision__num_ordre'],
+                annee_prevus=group['annee_prevus']
+            )
+            combined_data.append({
+                'num_ordre': group['descript_prevision__num_ordre'],
+                'description_prevision': group['descript_prevision__description_prevision'],
+                'annee_prevus': group['annee_prevus'],
+                'total_prevus': group['total_prevus'],
+                'related_data': related_data
+            })
+
+    except Prevoir.DoesNotExist:
+        return HttpResponse("Pas de donnée sur la prévision", status=404)
+
+    # Création du PDF
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+    styleN = styles["Normal"]
+    styleH = styles["Heading1"]
+    
+
+    logo_path = "static/img/logo.png"  # Assure-toi que ce chemin est accessible (voir remarques ci-dessous)
+    logo = Image(logo_path, width=60, height=60)
+    elements.append(logo)
+
+    # En-tête général
+    elements.append(Paragraph("ECC/3ème C.B.C.A - Département FINANCE", styleN))
+    elements.append(Paragraph("Institution : EGLISE CBCA/KATOYI", styleN))
+    elements.append(Paragraph("BP : 495 GOMA", styleN))
+    elements.append(Spacer(1, 12))
+    elements.append(Paragraph(f"BILAN DES PREVISIONS - {datetime.now().strftime('%d/%m/%Y')}", styleH))
+    elements.append(Spacer(1, 20))
+
+    # Tableau
+    table_data = [['N°', 'LES OFFRANDES', 'N° DE COMPTE', 'PREVISION']]  # En-tête
+
+    for bloc in combined_data:
+        # Ligne regroupée
+        table_data.append([
+            '-',
+            bloc['description_prevision'],
+            bloc['num_ordre'],
+            f"{bloc['total_prevus']}"
+        ])
+
+        for item in bloc['related_data']:
+            table_data.append([
+                '-',
+                item.nom_prevision,
+                item.num_compte,
+                f"{item.montant_prevus}"
+            ])
+
+    # Table object
+    table = Table(table_data, colWidths=[80, 200, 100, 100], repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('LEFTPADDING', (0, 0), (-1, -1), 5),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+    ]))
+
+    elements.append(table)
+    elements.append(Spacer(1, 40))
+
+    # Signatures
+    elements.append(Paragraph("Trésorier / RPS / EVARES / Comptable.Sce", styleN))
+    elements.append(Spacer(1, 12))
+    elements.append(Paragraph("Pour acquit", styleN))
+    elements.append(Spacer(1, 12))
+    elements.append(Paragraph("Caissier", styleN))
+
+    # Génération finale du document
+    doc.build(elements)
+
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename="bilan_previsions.pdf")
 
 
 

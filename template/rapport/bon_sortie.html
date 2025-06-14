@@ -31,7 +31,7 @@
             </div >
             <div class="espace">
                 <p><strong>Date :</strong>{% for data in data %}
-                    {{data.date_sortie}}
+                    {{data.date_payement}}
                     {% endfor %}
                     </p>
             </div>
@@ -39,9 +39,10 @@
         </div>
         
     </div>
-    <h3>BON DE SORTIE DE CAISSE N° 0001/2025</h3>
+    {% for data in data %}
+    <h3>BON DE SORTIE DE CAISSE N° {{rand}}/CBCA/{{data.annee}}</h3>
     <br>
-    <p><strong>Nom du bénéficiaire : </strong>{% for data in data %}
+    <p><strong>Nom du bénéficiaire : </strong>
         {{data.departement}}
         {{data.motifs}}
         

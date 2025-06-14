@@ -11,7 +11,7 @@
         <h1 class="h3 mb-0 text-gray-800">Table de bilan</h1>
         
     </div>
-
+    <a href="{% url 'app:Bilan_pdf' %}" class="btn btn-primary mb-3">Rapport en PDF</a>
     <p class="mb-4">Ce tableau contient la liste de toute les payements faitent a l'eglise CBCA Katoyi </p>
 
     <!-- DataTales Example -->
@@ -29,7 +29,7 @@
                             <th>N°</th>
                             <th>LES OFFRANDES / LES ENGAGEMENTS DES ADHERENTS</th>
                             <th>Numéro de compte</th>
-                            <th>PREVISION 2024</th>
+                            <th>PREVISION</th>
                             
                         </tr>
                     
@@ -37,9 +37,10 @@
                         </thead>
                         <tbody>
                             {% for bloc in data %}
+                            
                                 <!-- Ligne de regroupement -->
                                 <tr style="background-color: #f0f8ff; font-weight: bold;">
-                                    <td></td>
+                                    <td>-</td>
                                     <td>{{ bloc.description_prevision }}</td>
                                     <td>{{ bloc.num_ordre }}</td>
                                     <td>Sous-total {{ bloc.total_prevus }}</td>
@@ -51,7 +52,7 @@
                                 <!-- Détails ligne par ligne -->
                                 {% for item in bloc.related_data %}
                                     <tr>
-                                        <td></td>
+                                        <td>-</td>
                                         <td>{{ item.nom_prevision }}</td>
                                         <td>{{ item.num_compte }}</td>
                                         <td>{{ item.montant_prevus }}</td>
