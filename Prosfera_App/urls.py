@@ -52,7 +52,8 @@ urlpatterns = [
     path('Formulaire_Payement/<uuid:id>/', payementformulairePage, name='Formulaire_Payement'),
     path('Payement', payement, name='Payement'),
     path('Payement_Offrande_Data',Payement_Offrande_Data, name='Payement_Offrande_Data'),
-    
+    path('Modifier_payement/<uuid:id>/', editer_payement, name='Modifier_payement'),
+    path('Modification_payement/<uuid:id>/', modification_payement, name='Modification_payement'),
     ################ Depense   #########################
     path('Formulaire_Depense/<uuid:id>/', depensePage, name='Depense'),
     path('Decaisser', depenser, name='Decaisser'),
@@ -64,11 +65,13 @@ urlpatterns = [
     path('Payement_Ahadi', payement_ahadi_Page, name='Payement_Ahadi'),
     path('Formulaire_Ahadi/<uuid:id>/', ahadiformulairePage, name='Formulaire_Ahadi'),
     path('Souscrire', souscrire, name='Souscrire'),
-    path('Liste_souscription', liste_souscription, name='Liste_souscription'),
     path('Details/<uuid:id>/', detailPage, name='Details'),
-    path('Formulaire_Ahadi_Payement/<uuid:id>/', Formulaire_Ahadi_Payement, name='Formulaire_Ahadi_Payement'),
+    path('Formulaire_Ahadi_Payement/<uuid:id>/', formulaire_ahadi_payement, name='Formulaire_Ahadi_Payement'),
     path('Payement_ahadi', payement_ahadi, name='Payement_ahadi'),
     path('Payement_ahadi_data', data_payement_ahadi, name='Payement_ahadi_data'),
+    path('Liberation_ahadi', liberation_ahadi, name='Liberation_ahadi'),
+    path('Modifier_payement_ahadi/<uuid:id>/', editer_ahadi, name='Modifier_payement_ahadi'),
+    path('Modifier_souscription_ahadi/<uuid:id>/', modifier_ahadi_payement, name='Modifier_souscription_ahadi'),
     ############## Recu #########################
     path('Recu/<uuid:id>/', recuPage, name='Recu'),
     path('Recu_ahadi/<uuid:id>/', recuPage, name='Recu'),
@@ -83,6 +86,6 @@ urlpatterns = [
     path('test', Pagination_Search_Groupe_Offrande, name='test'),
     #################### DATA API #######################
     path('api/presfora-data/', views.get_presfora_data, name='get_presfora_data'),
-    
+    path('api/presfora_data_pourcentage/', views.get_presfora_data_proucentage, name='get_presfora_data_proucentage')
 
 ]

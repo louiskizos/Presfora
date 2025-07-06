@@ -16,3 +16,6 @@ from django.test import TestCase
 ##### Lien : https://prosphora.pythonanywhere.com source /home/Prosphora/.virtualenvs/venv/bin/activate
 ###### git config --global user.name "Ton Nom"
 ###### git config --global user.email "ton.email@example.com"
+
+
+########### git remote add origin https://github.com/louiskizos/ApiMasomo.git

@@ -8,11 +8,12 @@ from django.db.models import Sum
 from Prosfera_App.models import *
 from django.contrib.auth import login, update_session_auth_hash
 from django.core.paginator import Paginator
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from django.contrib import messages
 from datetime import datetime
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.db.models import Sum, OuterRef, Subquery
 import re
 import io
 from reportlab.pdfgen import canvas
@@ -29,6 +30,10 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Image
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from django.db.models import Sum
+from .models import Payement_Offrande, Prevoir
 
 
 # Create your views here.
@@ -181,6 +186,8 @@ def change_password(request):
 # fin fin
 
 ############## ACCEUIL ###############################
+def arrondir(val):
+    return val.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
 @login_required
@@ -197,12 +204,25 @@ def homePage(request):
         reste = soldes - depense
         montant_prevu = Prevoir.objects.aggregate(total=Sum('montant_prevus'))['total']
         montant_prevu = Decimal(montant_prevu) if montant_prevu is not None else Decimal(0.0)
-        
+        total = (soldes + depense + montant_prevu)
+        if total == 0:
+                pourcentage_solde = Decimal('0.00')
+                pourcentage_depense = Decimal('0.00')
+                pourcentage_prevision = Decimal('0.00')
+        else:
+                pourcentage_solde = arrondir((soldes / total) * 100)
+                pourcentage_depense = arrondir((depense / total) * 100)
+                pourcentage_prevision = arrondir((montant_prevu / total) * 100)
+
+            
         context = {
             'Soldes': reste,
             'encaissement': soldes,
             'depense': depense,
             'Montant_prevu': montant_prevu,
+            'pourcentage_solde' : pourcentage_solde,
+            'pourcentage_depense' : pourcentage_depense,
+            'pourcentage_prevision' : pourcentage_prevision
         }
         
         page = 'statistic/statistique.html'
@@ -503,6 +523,7 @@ def Supprimmer_Groupe_Offrande(request, id):
 def update_groupe_offrandes(request, id):
 
     data = Groupe_Offrandes.objects.get(id=id)
+
     context = {'groupe_offrandes' : data}
     page = 'groupe_offrandes/update_groupe_offrandes.html'
     
@@ -690,28 +711,29 @@ def update_groupe_previsions(request, id):
 
 @login_required
 def updateGroupePrevision(request, id):
+
     if request.method == 'POST':
-        # Récupération des données du formulaire
+        
         num_ordre = request.POST['num_ordre']
         
         
         try:
-            # Récupération de l'instance Groupe_Previsions à modifier
+            
             data_groupe = Groupe_Previsions.objects.get(id=id)
-            # Vérification si les données sont différentes avant de les enregistrer
+            
             if data_groupe.num_ordre != num_ordre :
-                # Si les données sont différentes, on effectue la mise à jour
+                
                 data_groupe.num_ordre = num_ordre
                 data_groupe.save()
             
-            # Redirection vers la page des données de groupe de prévision
+            
             return redirect('app:Groupe_Prevision_Data')
 
         except Groupe_Previsions.DoesNotExist:
-            # Si l'instance avec l'id n'existe pas, on redirige ou on affiche un message d'erreur
+            
             return redirect('app:Groupe_Prevision_Data')  # Ou une autre action selon ton besoin
 
-    # Si la méthode n'est pas POST, on redirige vers la page des données de groupe de prévision
+   
     return redirect('app:Groupe_Prevision_Data')
 
 ############## SORTE DES PREVISIONS #####################
@@ -843,26 +865,41 @@ def  Sorte_Prevision_Data(request):
 
 ############## PAYEMENT DES OFFRANDES ###################
 
+from django.db.models import Q
+
 @login_required
 def payementOffrandePage(request):
-    # Récupération des objets Sorte_Offrande
-    #data = Sorte_Offrande.objects.filter(descript_recette__description_recette__iexact="Les engagements des adhérents")
 
-    data = Sorte_Offrande.objects.exclude(descript_recette__description_recette="Engagement des adhérents")
-    # Paginer les objets (5 éléments par page)
+    search_query = request.GET.get('q', '').strip()
+
+    data = Sorte_Offrande.objects.exclude(
+        descript_recette__description_recette="Engagement des adhérents"
+    )
+
+    
+    if search_query:
+        
+        mots = search_query.split()
+        query = Q()
+        for mot in mots:
+            query &= Q(nom_offrande__icontains=mot)
+
+        data = data.filter(query)
+
+  
     paginator = Paginator(data, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Calculer un numéro d'ordre dynamique pour chaque objet sur la page
-    for index, objet in enumerate(page_obj, start=1):  # `start=1` commence l'index à 1
-        objet.numero_ordre = index  # Assigner le numéro d'ordre à chaque objet
+    start_index = page_obj.start_index()
+    for index, objet in enumerate(page_obj, start=start_index):
+        objet.numero_ordre = index
 
-    # Passer les objets à la template
     context = {
-        'data': page_obj
+        'data': page_obj,
+        'search_query': search_query,
     }
-    # Rendre la page avec les données paginées et numérotées
+
     return render(request, 'payement_offrande/payement_offrandes.html', context)
 
 
@@ -979,6 +1016,38 @@ def  Payement_Offrande_Data(request):
     return render(request, 'payement_offrande/data_payement_offrande.html', context)
 
 
+def editer_payement(request, id):
+
+    try:
+        data = Payement_Offrande.objects.get(id=id, )
+        
+    except Payement_Offrande.DoesNotExist:
+        return render(request, '404.html', status=404)
+
+    
+    context = {
+        'payement' : data,
+        
+        }
+    return render(request, 'payement_offrande/editer_payement_offrandes.html', context)
+
+def modification_payement(request, id):
+    payement = get_object_or_404(Payement_Offrande, id=id)
+
+    if request.method == 'POST':
+        departement = request.POST.get('departement')
+        montant = request.POST.get('montant')
+        motif = request.POST.get('motif')
+
+        # Mise à jour
+        payement.departement = departement
+        payement.montant = montant
+        payement.motif = motif
+        payement.save()
+
+        return redirect('app:Recu_data')
+    return render(request, 'payement_offrande/editer_payement_offrandes.html', {'payement': payement})
+
 
 ############# DEPENSE ####################
 
@@ -1073,7 +1142,7 @@ def depenser(request):
 @login_required
 def depense_data(request):
     
-    data = Payement_Offrande.objects.filter(type_payement="Sortie")
+    data = Payement_Offrande.objects.filter(type_payement="Entree")
     # Paginer les objets (5 éléments par page)
     paginator = Paginator(data, 6)
     page_number = request.GET.get('page')
@@ -1130,50 +1199,71 @@ def bonSortiePage(request, nom):
 
 #################### AHADI #######################
 
-
 @login_required
 def souscrire_ahadi_Page(request):
+
+    search_query = request.GET.get('q', '').strip()
+
     
     data = Sorte_Offrande.objects.filter(
-    descript_recette__description_recette__icontains="Engagement des adhérents"
+        descript_recette__description_recette__icontains="Engagement des adhérents"
     )
-   
-    # Paginer les objets (5 éléments par page)
+
+    
+    if search_query:
+        data = data.filter(nom_offrande__icontains=search_query)
+
+    # Pagination
     paginator = Paginator(data, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Calculer un numéro d'ordre dynamique pour chaque objet sur la page
-    for index, objet in enumerate(page_obj, start=1):  # `start=1` commence l'index à 1
-        objet.numero_ordre = index  # Assigner le numéro d'ordre à chaque objet
+    
+    start_index = page_obj.start_index()
+    for index, objet in enumerate(page_obj, start=start_index):
+        objet.numero_ordre = index
 
-    # Passer les objets à la template
     context = {
-        'data': page_obj
+        'data': page_obj,
+        'search_query': search_query,
     }
-    # Rendre la page avec les données paginées et numérotées
+
     return render(request, 'ahadi/souscrire_ahadi.html', context)
 
 
 @login_required
 def payement_ahadi_Page(request):
     
-    #data = Sorte_Offrande.objects.all()
+    search_query = request.GET.get('q', '').strip()
+
     data = Ahadi.objects.all()
-    # Paginer les objets (5 éléments par page)
+
+
+    
+    if search_query:
+        
+        mots = search_query.split()
+        query = Q()
+        for mot in mots:
+            query &= Q(nom_postnom__icontains=mot)
+
+        data = data.filter(query)
+
+  
     paginator = Paginator(data, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Calculer un numéro d'ordre dynamique pour chaque objet sur la page
-    for index, objet in enumerate(page_obj, start=1):  # `start=1` commence l'index à 1
-        objet.numero_ordre = index  # Assigner le numéro d'ordre à chaque objet
+    start_index = page_obj.start_index()
+    for index, objet in enumerate(page_obj, start=start_index):
+        objet.numero_ordre = index
 
-    # Passer les objets à la template
+
+   
     context = {
-        'data': page_obj
+        'data': page_obj,
+        'search_query': search_query,
     }
-    # Rendre la page avec les données paginées et numérotées
     return render(request, 'ahadi/liste_ahadi_doit_payer.html', context)
 
 
@@ -1183,7 +1273,7 @@ def ahadiformulairePage(request, id):
     
     current_date = datetime.now()
     
-    # Tu peux aussi formater la date selon ton besoin
+    
     formatted_date = current_date.strftime('%d-%m-%Y')
     formatted_anne = current_date.strftime('%Y')
     data = Sorte_Offrande.objects.get(id=id)
@@ -1199,39 +1289,7 @@ def ahadiformulairePage(request, id):
 @login_required
 def detailPage(request, id):
 
-    # data2 = get_object_or_404(Ahadi, id=id)
-    # data_queryset = Payement_Offrande.objects.filter(nom_offrande=data2.nom_offrande)
-
-    # # Calcul des sommes cumulées
-    # cumulative_sums = []
-    # current_sum = 0
-
-    # for item in data_queryset:
-    #     if item.type_payement == 'Sortie':
-    #         current_sum -= item.montant or 0
-    #     else:
-    #         current_sum += item.montant or 0
-    #     cumulative_sums.append(current_sum)
-
-    # # Préparer les données traitées avec somme cumulative
-    # processed_data = []
-    # for i, item in enumerate(data_queryset):
-    #     processed_data.append({
-    #         'op': item,
-    #         'cumulative_sum': cumulative_sums[i]
-    #     })
-
-    # # Pagination des données traitées (5 éléments par page)
-    # paginator = Paginator(processed_data, 15)
-    # page_number = request.GET.get('page')
-    # page_obj = paginator.get_page(page_number)
-    # difference = data2.montant - processed_data.first().montant if processed_data.exists() else 0
-    # context = {
-    #     'data': page_obj,
-    #     'ahadi': data2,
-    #     'reste': difference
-          
-    # }
+  
     data2 = get_object_or_404(Ahadi, id=id)
     data = Payement_Offrande.objects.filter(nom_offrande=data2.nom_offrande)
     
@@ -1240,13 +1298,11 @@ def detailPage(request, id):
     current_sum = 0
 
     for item in data:
-        # if item.type_payement == 'Entree':
-        #     current_sum -= item.montant or 0
-        # else:
+        
         current_sum += item.montant or 0
         cumulative_sums.append(current_sum)
 
-    # Préparer les données traitées avec somme cumulative
+    
     processed_data = []
     for i, item in enumerate(data):
         processed_data.append({
@@ -1263,14 +1319,19 @@ def detailPage(request, id):
     return render(request, 'ahadi/detail.html', context)
 
 @login_required
-def Formulaire_Ahadi_Payement(request, id):
+def formulaire_ahadi_payement(request, id):
     
     current_date = datetime.now()
     
     # Tu peux aussi formater la date selon ton besoin
     formatted_date = current_date.strftime('%d-%m-%Y')
     formatted_anne = current_date.strftime('%Y')
-    data = Ahadi.objects.get(id=id, )
+    
+    try:
+        data = Ahadi.objects.get(id=id, )
+    except Ahadi.DoesNotExist:
+        return render(request, '404.html', status=404)
+
     
     context = {
         'data' : data,
@@ -1421,13 +1482,14 @@ def souscrire(request):
         message_erreur = "Échec de la souscription !"
         return render(request, 'ahadi/formulaire_ahadi.html', {'message_erreur': message_erreur})
 
+@login_required
 def data_payement_ahadi(request):
       
     #data = Payement_Offrande.objects.all()
 
     data = Payement_Offrande.objects.filter(nom_offrande__descript_recette__description_recette="Engagement des adhérents")
 
-    # Paginer les objets (5 éléments par page)
+
     paginator = Paginator(data, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -1443,42 +1505,104 @@ def data_payement_ahadi(request):
     return render(request, page, context )
 
 
+
 @login_required
-def liste_souscription(request):
-    
-    
+def liberation_ahadi(request):
+
     search_query = request.GET.get('q', '')
 
-    # Filtrer selon la recherche si elle existe
-    souscription_ahadi_list = Ahadi.objects.all()
+    engagements = Ahadi.objects.all()
+
     if search_query:
-        souscription_ahadi_list = souscription_ahadi_list.filter(nom_offrande__nom_offrande__icontains=search_query)
+        engagements = engagements.filter(nom_postnom__icontains=search_query)
 
-    # Trier les résultats (par exemple par date ou montant)
-    souscription_ahadi_list = souscription_ahadi_list.order_by('date_ahadi')  # ou 'montant', ou autre champ
+    
+    paiements = Payement_Offrande.objects.filter(
+        type_payement="Entree",
+        nom_offrande=OuterRef('nom_offrande'),
+        departement=OuterRef('nom_postnom'), 
+        nom_offrande__descript_recette__description_recette="Engagement des adhérents"
+    ).values('nom_offrande', 'departement').annotate(
+        total_paye=Sum('montant')
+    ).values('total_paye')
 
-    # Calcul de la somme des montants des résultats filtrés
-    total_montant = souscription_ahadi_list.aggregate(total=Sum('montant'))['total'] or 0
+    
+    engagements = engagements.annotate(
+        total_paye=Subquery(paiements, output_field=models.DecimalField(max_digits=15, decimal_places=2)),
+    )
 
-    # Pagination (5 objets par page)
-    paginator = Paginator(souscription_ahadi_list, 5)
+    
+    for e in engagements:
+        e.reste = (e.montant or 0) - (e.total_paye or 0)
+        
+
+    
+    paginator = Paginator(engagements, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Ajouter un numéro d'ordre
     start_index = page_obj.start_index()
-    for index, objet in enumerate(page_obj, start=start_index):
-        objet.numero_ordre = index
+    for index, obj in enumerate(page_obj, start=start_index):
+        obj.numero_ordre = index
 
     context = {
         'data': page_obj,
-        'total_montant': total_montant,
         'search_query': search_query,
     }
 
-    return render(request, 'ahadi/liste_ahadi.html', context)
+    return render(request, 'ahadi/liberation_ahadi.html', context)
 
-import random
+
+def editer_ahadi(request, id):
+
+    
+    current_date = datetime.now()
+
+    formatted_date = current_date.strftime('%d-%m-%Y')
+    formatted_anne = current_date.strftime('%Y')
+    
+    try:
+        data = Ahadi.objects.get(id=id, )
+        
+    except Ahadi.DoesNotExist:
+        return render(request, '404.html', status=404)
+
+    
+    context = {
+        'data' : data,
+        'date_paiement' : formatted_date,
+        'annee_paiement' : formatted_anne,
+        }
+    return render(request, 'ahadi/editer_souscription_ahadi.html', context)
+
+
+def modifier_ahadi_payement(request, id):
+
+    if request.method == 'POST':
+        
+        
+        nom_postnom = request.POST['nom_postnom']
+        montant = request.POST['montant']
+        
+        try:
+            
+            data = Ahadi.objects.get(id=id)
+            data.nom_postnom = nom_postnom
+            data.montant = montant
+            data.save()
+            
+            
+            return redirect('app:Liberation_ahadi')
+
+        except Ahadi.DoesNotExist:
+            
+            return redirect('app:Liberation_ahadi')  # Ou une autre action selon ton besoin
+
+   
+    return redirect('app:Liberation_ahadi')
+    
+
+####################### FIN Ahadi #########################
 
 def recuPage(request, id):
     
@@ -1492,19 +1616,36 @@ def recuPage(request, id):
 def recu_dataPage(request):
       
     #data = Payement_Offrande.objects.all()
+    search_query = request.GET.get('q', '').strip()
 
+    
     data = Payement_Offrande.objects.exclude(nom_offrande__descript_recette__description_recette="Engagement des adhérents")
 
-    # Paginer les objets (5 éléments par page)
-    paginator = Paginator(data, 5)
+
+    
+    if search_query:
+        
+        mots = search_query.split()
+        query = Q()
+        for mot in mots:
+            query &= Q(departement__icontains=mot)
+
+        data = data.filter(query)
+
+  
+    paginator = Paginator(data, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    start_index = page_obj.start_index()
+    for index, objet in enumerate(page_obj, start=start_index):
+        objet.numero_ordre = index
+
+
    
-    for index, objet in enumerate(page_obj, start=1): 
-        objet.numero_ordre = index 
     context = {
-        'data': page_obj
+        'data': page_obj,
+        'search_query': search_query,
     }
 
     page = 'rapport/recu_data.html'
@@ -1520,16 +1661,10 @@ def custom_404(request, exception):
 
 ############ DATA POUR LES GRAPHIQUES ##############
 
-
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from django.db.models import Sum
-from .models import Payement_Offrande, Prevoir
-
 @api_view(['GET'])
 def get_presfora_data(request):
 
-    # Entrées (exclut les sorties)
+    
     payement_entree = Payement_Offrande.objects.exclude(type_payement='Entreenom_offrande')\
         .values('annee').annotate(total_payement=Sum('montant')).order_by('annee')
 
@@ -1537,16 +1672,16 @@ def get_presfora_data(request):
     payement_sortie = Payement_Offrande.objects.filter(type_payement='Sortie')\
         .values('annee').annotate(total_depense=Sum('montant')).order_by('annee')
 
-    # Prévisions
+    
     previsions = Prevoir.objects.values('annee_prevus')\
         .annotate(total_prevision=Sum('montant_prevus')).order_by('annee_prevus')
 
-    # Sérialisation
+
     payements_data = [{"annee": p['annee'], "total_payement": p['total_payement']} for p in payement_entree]
     depenses_data = [{"annee": p['annee'], "total_depense": p['total_depense']} for p in payement_sortie]
     previsions_data = [{"annee_prevus": p['annee_prevus'], "total_prevision": p['total_prevision']} for p in previsions]
 
-    # Toutes les années uniques
+    
     labels = sorted(list(set(
         [p['annee'] for p in payement_entree] +
         [p['annee'] for p in payement_sortie] +
@@ -1605,6 +1740,40 @@ def get_presfora_data(request):
     }
 
     return Response(data)
+
+
+@api_view(['GET'])
+def get_presfora_data_proucentage(request):
+    # Récupération des données
+    soldes = Payement_Offrande.objects.filter(type_payement="Entree").aggregate(total=Sum('montant'))['total']
+    soldes = Decimal(soldes) if soldes is not None else Decimal(0.0)
+
+    depense = Payement_Offrande.objects.filter(type_payement="Sortie").aggregate(total=Sum('montant'))['total']
+    depense = Decimal(depense) if depense is not None else Decimal(0.0)
+
+    montant_prevu = Prevoir.objects.aggregate(total=Sum('montant_prevus'))['total']
+    montant_prevu = Decimal(montant_prevu) if montant_prevu is not None else Decimal(0.0)
+
+    total = soldes + depense + montant_prevu
+
+    if total == 0:
+        pourcentage_solde = Decimal('0.00')
+        pourcentage_depense = Decimal('0.00')
+        pourcentage_prevision = Decimal('0.00')
+    else:
+        pourcentage_solde = arrondir((soldes / total) * 100)
+        pourcentage_depense = arrondir((depense / total) * 100)
+        pourcentage_prevision = arrondir((montant_prevu / total) * 100)
+
+    
+    data = {
+        'pourcentage_solde': float(pourcentage_solde),
+        'pourcentage_depense': float(pourcentage_depense),
+        'pourcentage_prevision': float(pourcentage_prevision),
+    }
+
+    return Response(data)
+
 
 
 ################## PDF #########################

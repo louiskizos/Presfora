@@ -29,9 +29,8 @@
                             <th>Numero du compte</th>
                             <th>Nom de l'offrande</th>
                             <th>Montant</th>
-                            <th>Date</th>
-                            <th>Voir</th>
-                            <th>Imprimer</th>
+                            <th></th>
+                            
                         </tr>
                     </thead>
                     <tbody>
@@ -42,19 +41,13 @@
                             <td>{{ i.nom_offrande.num_compte }}</td> 
                             <td>{{ i.nom_offrande }}</td>
                             <td>{{ i.montant }}</td>
-                            <td>
-                                {{i.date_payement}}
-                            </td>
+                            
                             <td>
                                     <!-- Lien pour modifier l'élément -->
                                     <a class="nav-link" href="Bon_Sortie/{{i.departement}}">
-                                        <i class="small text-xs font-weight-bold text-primary">Voir le recu</i>
+                                        <i class="small text-xs font-weight-bold text-primary">Depenser</i>
                                     </a></td>
-                            <td>
-                                <a class="nav-link" href="Bon_sorti_pdf/{{i.id}}">
-                                        <i class="small text-xs font-weight-bold text-primary">Imprimer</i>
-                                    </a>
-                            </td>
+                            
                         </tr>
                         {% endfor %}
                     </tbody>

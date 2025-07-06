@@ -12,13 +12,28 @@
         
     </div>
 
-    <p class="mb-4">Ce tableau contient toutes les preuves de tout payements fait a l'eglise CBCA Katoyi </p>
+    <p class="mb-4">Ce tableau contient toutes le preuve de payements fait a l'eglise CBCA Katoyi </p>
 
     <!-- DataTales Example -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Donnees</h6>
         </div>
+        <div>
+            <br>
+        </div>
+        <form method="get" action="{% url 'app:Recu_data' %}"
+                        class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
+                        <div class="input-group">
+                            <input  type="text" name="q" class="form-control bg-light border-0 small" placeholder="Recherche..."
+                                aria-label="Search" aria-describedby="basic-addon2" value="{{ search_query }}">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-search fa-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+             </form>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
@@ -30,8 +45,8 @@
                             <th>Nom d'offrande</th>
                             <th>Montant</th>
                             <th>Date de payement</th>
-                            <th>Voir ...</th>
-                            <th>Impression</th>
+                            <th>Actions</th>
+                        
                         </tr>
                     </thead>
                     <tbody>
@@ -47,17 +62,15 @@
                             <td>
                                 <div class="row">
                                     <!-- Lien pour modifier, en s'assurant que l'URL de modification contient l'ID -->
-                                    <a class="nav-link d-block" href="Recu/{{i.id}}">
-                                        <i class="">Voir</i>
+                                    <a class="nav-link" href="Modifier_payement/{{i.id}}">
+                                        <i class="">Modifier</i>
                                     </a>
-                                </div>
-                            </td>
-                            
-                            <td>
-                                <div class="row">
-                                    <!-- Lien pour modifier, en s'assurant que l'URL de modification contient l'ID -->
-                                    <a class="nav-link d-block" href="Recu_pdf/{{i.id}}">
-                                        <i class="">Imprimer</i>
+                                    <a class="nav-link" href="Recu/{{i.id}}">
+                                        <i class="">Voir...</i>
+                                    </a>
+                                    <!-- Lien pour supprimer, en s'assurant que l'URL de suppression contient l'ID -->
+                                    <a class="nav-link" href="Recu_pdf/{{i.id}}">
+                                        <i class="small text-xs font-weight-bold text-danger">Imprimer</i>
                                     </a>
                                 </div>
                             </td>
