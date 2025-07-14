@@ -19,6 +19,22 @@
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Livre de caisse</h6>
         </div>
+        
+        <div>
+            <br>
+        </div>
+        <form method="get" action="{% url 'app:Livre_Caisse' %}"
+                        class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
+                        <div class="input-group">
+                            <input  type="text" name="q" class="form-control bg-light border-0 small" placeholder="Recherche par mois ou annee"
+                                aria-label="Search" aria-describedby="basic-addon2" value="{{ search_query }}">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-search fa-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+             </form>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">

@@ -31,7 +31,9 @@
             </div >
             <div class="espace">
                 <p><strong>Date :</strong>{% for data in data %}
-                    {{data.date_payement}}
+                    {% if forloop.first %}
+                            {{data.date_payement}}
+                    {% endif %}
                     {% endfor %}
                     </p>
             </div>
@@ -40,17 +42,18 @@
         
     </div>
     {% for data in data %}
-    <h3>BON DE SORTIE DE CAISSE N° {{rand}}/CBCA/{{data.annee}}</h3>
-    <br>
-    <p><strong>Nom du bénéficiaire : </strong>
-        {{data.departement}}
-        {{data.motifs}}
+    {% if forloop.first %}
+        <h3>BON DE SORTIE DE CAISSE N° {{ rand }}/CBCA/{{ data.annee }}</h3>
+        <br>
+        <p><strong>Nom du bénéficiaire : </strong>
+            {{ data.departement }}
+            {{ data.motifs }}
+        </p>
         
-    </p>
-    
-    <p><strong>Montant (en lettres) : </strong> {{data.montant_lettre}}<small> </small></p>
-    
-    <p><strong>Motif du paiement : </strong> {{data.motif}} </p>
+        <p><strong>Montant (en lettres) : </strong> {{ montant_en_lettre }}</p>
+        
+        <p><strong>Motif du paiement : </strong> {{ data.motif }}</p>
+    {% endif %}
 {% endfor %}
     <table>
         <thead>

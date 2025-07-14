@@ -28,8 +28,10 @@
                             
                             <th>Numero du compte</th>
                             <th>Nom du compte</th>
+                            <th>Departement</th>
                             <th>Montant</th>
                             <th>Date</th>
+                            <th>Actions</th>
                             
                         </tr>
                     </thead>
@@ -38,9 +40,28 @@
             <tr>
                 <td>{{ item.nom_offrande.num_compte }}</td>
                 <td>{{ item.nom_offrande }}</td>
+                <td>{{ item.departement }}</td>
                 <td>{{ item.montant }}</td>
+                
                  <td>
                         {{ item.date_payement }}        
+                </td>
+
+
+                <td>
+                    <div class="row">
+                        <!-- Lien pour modifier, en s'assurant que l'URL de modification contient l'ID -->
+                        <a class="nav-link" href="Editer_depense/{{item.id}}">
+                            <i class="">Modifier</i>
+                        </a>
+                        <a class="nav-link" href="Bon_Sortie/{{item.departement}}">
+                            <i class="">Voir...</i>
+                        </a>
+                        <!-- Lien pour supprimer, en s'assurant que l'URL de suppression contient l'ID -->
+                        <a class="nav-link" href="Bon_sorti_pdf/{{item.id}}">
+                            <i class="small text-xs font-weight-bold text-danger">Imprimer</i>
+                        </a>
+                    </div>
                 </td>
             </tr>
             {% empty %}

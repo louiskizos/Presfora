@@ -8,7 +8,7 @@ from django.db.models import Sum
 from Prosfera_App.models import *
 from django.contrib.auth import login, update_session_auth_hash
 from django.core.paginator import Paginator
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 from django.contrib import messages
 from datetime import datetime
 from rest_framework.decorators import api_view
@@ -34,6 +34,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.db.models import Sum
 from .models import Payement_Offrande, Prevoir
+from django.db.models import Q
 
 
 # Create your views here.
@@ -214,7 +215,14 @@ def homePage(request):
                 pourcentage_depense = arrondir((depense / total) * 100)
                 pourcentage_prevision = arrondir((montant_prevu / total) * 100)
 
-            
+        data_filter = EtatBesoin.objects.filter(validation_pasteur=False)
+        data_etat_count = data_filter.count()
+        
+        data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+        #data_filtered_caisse = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+        data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+        data_etat_counter = data_filtered.count()
+
         context = {
             'Soldes': reste,
             'encaissement': soldes,
@@ -222,7 +230,12 @@ def homePage(request):
             'Montant_prevu': montant_prevu,
             'pourcentage_solde' : pourcentage_solde,
             'pourcentage_depense' : pourcentage_depense,
-            'pourcentage_prevision' : pourcentage_prevision
+            'pourcentage_prevision' : pourcentage_prevision,
+            'data_etat_count_P': data_etat_count,
+            'data_etat_count_C': data_etat_counter,
+            'data_etat_besoin_false': data_filter,
+            'data_etat_besoin_true': data_filtered,
+            'data_etat_besoin_true': data_filtered,
         }
         
         page = 'statistic/statistique.html'
@@ -845,12 +858,12 @@ def CreatePrevision(request):
 @login_required
 def  Sorte_Prevision_Data(request): 
     
-    nombre_id = 10  # Par exemple, ou un autre nombre selon votre logique
+    nombre_id = 10  
     range_list = list(range(1, nombre_id + 1))
 
     data = Prevoir.objects.all()
-    #groupes_offrande_list = Sorte_Offrande.objects.filter(user=request.user)
-    paginator = Paginator(data, 5)  # Afficher 10 éléments par page
+    
+    paginator = Paginator(data, 5)  
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -864,8 +877,6 @@ def  Sorte_Prevision_Data(request):
     return render(request, page, context)
 
 ############## PAYEMENT DES OFFRANDES ###################
-
-from django.db.models import Q
 
 @login_required
 def payementOffrandePage(request):
@@ -927,8 +938,8 @@ def payement(request):
     
     if request.method == 'POST':
         
-        # Récupérer les valeurs envoyées par le formulaire
-        nom_offrande_id = request.POST.get('nom_offrande')  # L'ID de la recette
+        
+        nom_offrande_id = request.POST.get('nom_offrande')  
         departement = request.POST.get('departement')
         type_payement = "Entree"
         montant = request.POST.get('montant')
@@ -937,16 +948,16 @@ def payement(request):
         date_payement = request.POST.get('date_payement')
         annee = request.POST.get('annee')
         
-        # Validation des données
+        
         try:
-            # Vérifier si l'ID de la recette existe dans la base de données
+            
             nom_offrande = Sorte_Offrande.objects.get(id=nom_offrande_id)
         except Sorte_Offrande.DoesNotExist:
             message_erreur = "Le nom d'offrande spécifiée n'existe pas."
             context = {'message_erreur': message_erreur}
             return render(request, 'payement_offrande/formulaire_payement.html', context)
         
-        # Vérification du montant (doit être un nombre décimal)
+        
         try:
             montant = Decimal(montant)
         except (ValueError,):
@@ -954,7 +965,7 @@ def payement(request):
             context = {'message_erreur': message_erreur}
             return render(request, 'payement_offrande/formulaire_payement.html', context)
         
-        # Vérification de l'année (doit être un entier)
+        
         try:
             annee = int(annee)
         except ValueError:
@@ -962,7 +973,7 @@ def payement(request):
             context = {'message_erreur': message_erreur}
             return render(request, 'payement_offrande/formulaire_payement.html', context)
         
-        # Vérifier la date de paiement (assurez-vous qu'elle est dans un format valide)
+        
         try:
             date_payement = datetime.strptime(date_payement, '%d-%m-%Y').date()
         except ValueError:
@@ -970,9 +981,9 @@ def payement(request):
             context = {'message_erreur': message_erreur}
             return render(request, 'payement_offrande/formulaire_payement.html', context)
         
-        # Création de l'enregistrement
+        
         payement_offrande = Payement_Offrande(
-            nom_offrande=nom_offrande,  # Assigner l'objet Sorte_Offrande ici
+            nom_offrande=nom_offrande,  
             departement=departement,
             type_payement=type_payement,
             montant=montant,
@@ -982,7 +993,7 @@ def payement(request):
             annee=annee
         )
         
-        # Sauvegarde de l'enregistrement
+        
         payement_offrande.save()
         message_succes = "Paiement réussi avec succès !"
         context = {'message_succes': message_succes}
@@ -995,24 +1006,32 @@ def payement(request):
 @login_required
 def  Payement_Offrande_Data(request): 
 
-    # Récupération des objets Sorte_Offrande
+    
     data = Payement_Offrande.objects.all()
 
-    # Paginer les objets (5 éléments par page)
+    
     paginator = Paginator(data, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Calculer un numéro d'ordre dynamique pour chaque objet sur la page
-    for index, objet in enumerate(page_obj, start=1):  # `start=1` commence l'index à 1
-        objet.numero_ordre = index  # Assigner le numéro d'ordre à chaque objet
+    for index, objet in enumerate(page_obj, start=1):
+        objet.numero_ordre = index 
 
-    # Passer les objets à la template
+    data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+    data_etat_counter = data_filtered.count()
+
+    data_filteredFalse = EtatBesoin.objects.filter(validation_pasteur=False)
+    data_etat_counter_P = data_filteredFalse.count()
+
     context = {
-        'data': page_obj
+        'data': page_obj,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
     }
 
-    # Rendre la page avec les données paginées et numérotées
+    
     return render(request, 'payement_offrande/data_payement_offrande.html', context)
 
 
@@ -1032,6 +1051,7 @@ def editer_payement(request, id):
     return render(request, 'payement_offrande/editer_payement_offrandes.html', context)
 
 def modification_payement(request, id):
+
     payement = get_object_or_404(Payement_Offrande, id=id)
 
     if request.method == 'POST':
@@ -1046,146 +1066,346 @@ def modification_payement(request, id):
         payement.save()
 
         return redirect('app:Recu_data')
+    
     return render(request, 'payement_offrande/editer_payement_offrandes.html', {'payement': payement})
 
 
 ############# DEPENSE ####################
+def depensePage(request, solde):
 
-def depensePage(request, id):
-    
     current_date = datetime.now()
- 
     formatted_date = current_date.strftime('%d-%m-%Y')
-    formatted_anne = current_date.strftime('%Y')
-    data = Sorte_Offrande.objects.get(id=id)
-    
+    formatted_annee = current_date.strftime('%Y')
+
+    etat_not_id = request.POST.get('etat_not_id') or request.GET.get('etat_not_id')
+
+    etat_obj = None
+    if etat_not_id:
+        etat_obj = get_object_or_404(EtatBesoin, id=etat_not_id)
+
+
+    queryset = Payement_Offrande.objects.filter(type_payement="Entree")
+
+    depense_list = (
+        queryset
+        .values('nom_offrande__nom_offrande', 'nom_offrande__num_compte', 'nom_offrande_id')
+        .annotate(total_montant=Sum('montant'))
+        .order_by('nom_offrande__nom_offrande')
+    )
+
+    data = depense_list.filter(total_montant=solde).first() if depense_list else None
+    data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+    data_etat_counter = data_filtered.count()
+
+    data_filteredFalse = EtatBesoin.objects.filter(validation_pasteur=False)
+    data_etat_counter_P = data_filteredFalse.count()
+
+
     context = {
-        'data' : data,
-        'date_paiement' : formatted_date,
-        'annee_paiement' : formatted_anne,
-        }
-    page = 'depense/formulaire_depense.html'
-    return render(request, page, context )
+        'data': data,
+        'date_paiement': formatted_date,
+        'annee_paiement': formatted_annee,
+        'etat_not_id': etat_not_id,
+        'etat_obj': etat_obj,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
+    }
+
+    return render(request, 'depense/formulaire_depense.html', context)
+
+
 
 def depenser(request):
-    
     if request.method == 'POST':
-        
-        # Récupérer les valeurs envoyées par le formulaire
-        nom_offrande_id = request.POST.get('nom_offrande')  # L'ID de la recette
+        nom_offrande_id = request.POST.get('nom_offrande')
         departement = request.POST.get('departement')
         type_payement = "Sortie"
         montant = request.POST.get('montant')
-        montant_lettre = num2words(montant, lang='fr', to='currency', currency='USD')
+        etat_montant = request.POST.get('etat_montant')
         motif = request.POST.get('motif')
         date_payement = request.POST.get('date_payement')
         annee = request.POST.get('annee')
-        
-        # Validation des données
+        solde = request.POST.get('solde')
+        validation_caisse = True
+        etat_not_id = request.POST.get('etat_not_id')
+
+        current_date = datetime.now()
+        formatted_date = current_date.strftime('%d-%m-%Y')
+        formatted_anne = current_date.strftime('%Y')
+
+        data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+        data_etat_counter = data_filtered.count()
+        data_filteredFalse = EtatBesoin.objects.filter(validation_pasteur=False)
+        data_etat_counter_P = data_filteredFalse.count()
+
+        etat_obj = None
+        if etat_not_id:
+            etat_obj = get_object_or_404(EtatBesoin, id=etat_not_id)
+
         try:
-            # Vérifier si l'ID de la recette existe dans la base de données
             nom_offrande = Sorte_Offrande.objects.get(id=nom_offrande_id)
         except Sorte_Offrande.DoesNotExist:
-            message_erreur = "Le nom d'offrande spécifiée n'existe pas."
-            context = {'message_erreur': message_erreur}
-            return render(request, 'depense/formulaire_depense.html', context)
-        
-        # Vérification du montant (doit être un nombre décimal)
+            return render(request, 'depense/formulaire_depense.html', {
+                'message_erreur': "Le nom d'offrande spécifié n'existe pas.",
+                'date_paiement': formatted_date,
+                'annee_paiement': formatted_anne,
+                'etat_not_id': etat_not_id,
+                'etat_obj': etat_obj,
+                'data_etat_count_C': data_etat_counter,
+                'data_etat_besoin_true': data_filtered,
+                'data_etat_besoin_false': data_filteredFalse,
+                'data_etat_count_P': data_etat_counter_P,
+            })
+
         try:
             montant = Decimal(montant)
-        except (ValueError,):
-            message_erreur = "Le montant n'est pas valide."
-            context = {'message_erreur': message_erreur}
-            return render(request, 'depense/formulaire_depense.html', context)
-        
-        # Vérification de l'année (doit être un entier)
+        except (ValueError, InvalidOperation):
+            return render(request, 'depense/formulaire_depense.html', {
+                'message_erreur': "Le montant n'est pas valide.",
+                'date_paiement': formatted_date,
+                'etat_not_id': etat_not_id,
+                'etat_obj': etat_obj,
+                'data_etat_count_C': data_etat_counter,
+                'data_etat_besoin_true': data_filtered,
+                'data_etat_besoin_false': data_filteredFalse,
+                'data_etat_count_P': data_etat_counter_P,
+            })
+
+        try:
+            etat_montant = Decimal(etat_montant)
+        except (ValueError, InvalidOperation):
+            return render(request, 'depense/formulaire_depense.html', {
+                'message_erreur': "Le montant n'est pas valide.",
+                'etat_not_id': etat_not_id,
+                'etat_obj': etat_obj,
+                'data_etat_count_C': data_etat_counter,
+                'data_etat_besoin_true': data_filtered,
+                'data_etat_besoin_false': data_filteredFalse,
+                'data_etat_count_P': data_etat_counter_P,
+            })
+
+        try:
+            solde = Decimal(solde)
+        except (ValueError, InvalidOperation):
+            return render(request, 'depense/formulaire_depense.html', {
+                'message_erreur': "Le solde n'est pas valide.",
+                'date_paiement': formatted_date,
+                'etat_not_id': etat_not_id,
+                'etat_obj': etat_obj,
+                'data_etat_count_C': data_etat_counter,
+                'data_etat_besoin_true': data_filtered,
+                'data_etat_besoin_false': data_filteredFalse,
+                'data_etat_count_P': data_etat_counter_P,
+            })
+
         try:
             annee = int(annee)
         except ValueError:
-            message_erreur = "L'année n'est pas valide."
-            context = {'message_erreur': message_erreur}
-            return render(request, 'depense/formulaire_depense.html', context)
-        
-        # Vérifier la date de paiement (assurez-vous qu'elle est dans un format valide)
+            return render(request, 'depense/formulaire_depense.html', {
+                'message_erreur': "L'année n'est pas valide.",
+                'date_paiement': formatted_date,
+                'etat_not_id': etat_not_id,
+                'etat_obj': etat_obj,
+                'data_etat_count_C': data_etat_counter,
+                'data_etat_besoin_true': data_filtered,
+                'data_etat_besoin_false': data_filteredFalse,
+                'data_etat_count_P': data_etat_counter_P,
+            })
+
         try:
             date_payement = datetime.strptime(date_payement, '%d-%m-%Y').date()
         except ValueError:
-            message_erreur = "La date de paiement n'est pas valide."
-            context = {'message_erreur': message_erreur}
-            return render(request, 'depense/formulaire_depense.html', context)
+            return render(request, 'depense/formulaire_depense.html', {
+                'message_erreur': "La date de paiement n'est pas valide.",
+                'etat_not_id': etat_not_id,
+                'etat_obj': etat_obj,
+                'data_etat_count_C': data_etat_counter,
+                'data_etat_besoin_true': data_filtered,
+                'data_etat_besoin_false': data_filteredFalse,
+                'data_etat_count_P': data_etat_counter_P,
+            })
+
+        # Ici tu peux continuer avec la logique de création de la dépense si tout est valide
+        # if isinstance(date_payement, str):
+        #     try:
+        #         date_payement = datetime.strptime(date_payement, '%Y-%m-%d').date()
+        #     except ValueError:
+        #         return render(request, 'depense/formulaire_depense.html', {
+        #             'message_erreur': "La date de paiement n'est pas valide.",
+        #             'data_etat_count_C': data_etat_counter,
+        #             'data_etat_besoin_true': data_filtered,
+        #             'data_etat_besoin_false': data_filteredFalse,
+        #             'data_etat_count_P': data_etat_counter_P,
+        #         })
+
+        if montant > solde:
+            return render(request, 'depense/formulaire_depense.html', {
+                'message_erreur': "Le montant dépasse le solde disponible.",
+                'date_paiement': formatted_date,
+
+        'etat_not_id': etat_not_id,
+        'etat_obj': etat_obj,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
         
-        # Création de l'enregistrement
+            })
+        
+        
+        if montant > etat_montant:
+            return render(request, 'depense/formulaire_depense.html', {
+                'message_erreur': "Le montant dépasse l'état de besoin.",
+                'date_paiement': formatted_date,
+
+        'etat_not_id': etat_not_id,
+        'etat_obj': etat_obj,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
+        
+            })
+
+        montant_lettre = num2words(montant, lang='fr', to='currency', currency='USD')
+
         decaisser_offrande = Payement_Offrande(
-            nom_offrande=nom_offrande,  # Assigner l'objet Sorte_Offrande ici
+            nom_offrande=nom_offrande,
             departement=departement,
             type_payement=type_payement,
             montant=montant,
             montant_lettre=montant_lettre,
-            motif = motif,
+            motif=motif,
             date_payement=date_payement,
             annee=annee
         )
-        
-        # Sauvegarde de l'enregistrement
         decaisser_offrande.save()
-        message_succes = "Decaissement réussi avec succès !"
-        context = {'message_succes': message_succes}
-        return render(request, 'depense/formulaire_depense.html', context)
-    
-    else:
-        message_erreur = "Échec du paiement !"
-        return render(request, 'depense/formulaire_depense.html', {'message_erreur': message_erreur})
+        etat_obj.validation_caisse = validation_caisse
+        etat_obj.save()
+
+        return redirect('app:Depense_data')
+
+    return render(request, 'depense/formulaire_depense.html')
 
 
-    
 
 @login_required
 def depense_data(request):
-    
-    data = Payement_Offrande.objects.filter(type_payement="Entree")
-    # Paginer les objets (5 éléments par page)
-    paginator = Paginator(data, 6)
+    search_query = request.GET.get('q', '').strip()
+
+    entrees = Payement_Offrande.objects.filter(type_payement="Entree")
+    sorties = Payement_Offrande.objects.filter(type_payement="Sortie")
+
+    if search_query:
+        entrees = entrees.filter(nom_offrande__nom_offrande__icontains=search_query)
+        sorties = sorties.filter(nom_offrande__nom_offrande__icontains=search_query)
+
+    total_entree = entrees.values(
+        'nom_offrande__nom_offrande',
+        'nom_offrande__num_compte',
+        'nom_offrande_id'
+    ).annotate(
+        total_montant=Sum('montant')
+    )
+
+    total_sortie = sorties.values(
+        'nom_offrande_id'
+    ).annotate(
+        total_montant_depense=Sum('montant')
+    )
+
+    depenses_map = {item['nom_offrande_id']: item['total_montant_depense'] for item in total_sortie}
+
+    resultat = []
+    for item in total_entree:
+        offrande_id = item['nom_offrande_id']
+        montant_sortie = depenses_map.get(offrande_id, 0)
+        solde = item['total_montant'] - montant_sortie
+        resultat.append({
+            'nom_offrande__nom_offrande': item['nom_offrande__nom_offrande'],
+            'nom_offrande__num_compte': item['nom_offrande__num_compte'],
+            'solde': solde,
+            'total_montant': item['total_montant'],
+            'total_montant_depense': montant_sortie,
+            'nom_offrande_id': offrande_id,
+        })
+
+    paginator = Paginator(resultat, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Calculer un numéro d'ordre dynamique pour chaque objet sur la page
-    for index, objet in enumerate(page_obj, start=1):  # `start=1` commence l'index à 1
-        objet.numero_ordre = index  # Assigner le numéro d'ordre à chaque objet
+    start_index = page_obj.start_index()
+    for index, obj in enumerate(page_obj, start=start_index):
+        obj['numero_ordre'] = index
 
-    # Passer les objets à la template
+    data_filtered_true = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+    data_etat_counter_C = data_filtered_true.count()
+
+    data_filtered_false = EtatBesoin.objects.filter(validation_pasteur=False)
+    data_etat_counter_P = data_filtered_false.count()
+
+    etat_not_id = request.POST.get('etat_not_id') if request.method == 'POST' else None
+
     context = {
-        'data': page_obj
+        'data': page_obj,
+        'search_query': search_query,
+        'data_etat_besoin_true': data_filtered_true,
+        'data_etat_besoin_false': data_filtered_false,
+        'data_etat_count_C': data_etat_counter_C,
+        'data_etat_count_P': data_etat_counter_P,
+        'etat_not_id': etat_not_id,
     }
 
-    # Rendre la template
     return render(request, 'depense/data_depense.html', context)
 
 
 @login_required
 def Sortie_Data(request):
-    # Récupérer les objets avec type 'Sortie' triés par date
+    
     data = Payement_Offrande.objects.filter(type_payement="Sortie").order_by('date_payement')
 
-    # Pagination des données traitées (5 éléments par page)
     paginator = Paginator(data, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    
+    data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+    data_etat_counter = data_filtered.count()
+
+    data_filteredFalse = EtatBesoin.objects.filter(validation_pasteur=False)
+    data_etat_counter_P = data_filteredFalse.count()
 
     context = {
-        'data': page_obj  # Contient des dicts avec 'op' et 'cumulative_sum'
+        'data': page_obj,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
     }
 
-    # Rendre la page avec les données paginées
+    
     return render(request, 'depense/sortie_data.html', context)
 
 
 def bonSortiePage(request, nom):
+
+    
     try:
         nom_beneficiaire_cible = nom  # Utilisez la variable 'nom' de votre requête initiale
         
         data = Payement_Offrande.objects.filter(departement=nom_beneficiaire_cible)
         random_nombre = random.randint(1000, 9999)
-        context = {'data' : data, 'rand' : random_nombre}
+        total_montant = sum([item.montant for item in data], Decimal(0))
+        montant_en_lettre = num2words(total_montant, lang='fr').capitalize()
+
+        context = {
+            'data' : data, 
+            'rand' : random_nombre,
+            'total_montant': total_montant,
+            'montant_en_lettre': montant_en_lettre,
+            
+            }
         
         page = 'rapport/bon_sortie.html'
         return render(request, page, context)
@@ -1196,6 +1416,26 @@ def bonSortiePage(request, nom):
         page = 'rapport/bon_sortie.html'  # Vous pouvez créer une page d'erreur spécifique
         return render(request, page, context)
 
+def editer_depense(request, id):
+
+    data = Payement_Offrande.objects.get(id=id)
+    
+    data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+    data_etat_counter = data_filtered.count()
+
+    data_filteredFalse = EtatBesoin.objects.filter(validation_pasteur=False)
+    data_etat_counter_P = data_filteredFalse.count()
+
+
+    context = {
+        'data': data,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
+    }
+
+    return render(request, 'depense/editer_depense.html', context)
 
 #################### AHADI #######################
 
@@ -1259,10 +1499,20 @@ def payement_ahadi_Page(request):
         objet.numero_ordre = index
 
 
-   
+    data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+    data_etat_counter = data_filtered.count()
+
+    data_filteredFalse = EtatBesoin.objects.filter(validation_pasteur=False)
+    data_etat_counter_P = data_filtered.count()
+
+
     context = {
         'data': page_obj,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
         'search_query': search_query,
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
     }
     return render(request, 'ahadi/liste_ahadi_doit_payer.html', context)
 
@@ -1487,21 +1737,50 @@ def data_payement_ahadi(request):
       
     #data = Payement_Offrande.objects.all()
 
+
+
+    search_query = request.GET.get('q', '').strip()
+
+    
+    #data = Payement_Offrande.objects.exclude(nom_offrande__descript_recette__description_recette="Engagement des adhérents")
     data = Payement_Offrande.objects.filter(nom_offrande__descript_recette__description_recette="Engagement des adhérents")
 
 
-    paginator = Paginator(data, 5)
+    
+    if search_query:
+        
+        mots = search_query.split()
+        query = Q()
+        for mot in mots:
+            query &= Q(departement__icontains=mot)
+
+        data = data.filter(query)
+
+  
+    paginator = Paginator(data, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-   
-    for index, objet in enumerate(page_obj, start=1): 
-        objet.numero_ordre = index 
-    context = {
-        'data': page_obj
-    }
+    start_index = page_obj.start_index()
+    for index, objet in enumerate(page_obj, start=start_index):
+        objet.numero_ordre = index
 
-    page = 'rapport/recu_data.html'
+    data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+    data_etat_counter = data_filtered.count()
+
+    data_filteredFalse = EtatBesoin.objects.filter(validation_pasteur=False)
+    data_etat_counter_P = data_filtered.count()
+
+
+    context = {
+        'data': page_obj,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
+        'search_query': search_query,
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
+    }
+    page = 'ahadi/payement_ahadi_data.html'
     return render(request, page, context )
 
 
@@ -1545,15 +1824,24 @@ def liberation_ahadi(request):
     for index, obj in enumerate(page_obj, start=start_index):
         obj.numero_ordre = index
 
+
+    data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+    data_etat_counter = data_filtered.count()
+
+    data_filteredFalse = EtatBesoin.objects.filter(validation_pasteur=False)
+    data_etat_counter_P = data_filteredFalse.count()
+
     context = {
         'data': page_obj,
-        'search_query': search_query,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
     }
-
     return render(request, 'ahadi/liberation_ahadi.html', context)
 
 
-def editer_ahadi(request, id):
+def editer_souscription_ahadi(request, id):
 
     
     current_date = datetime.now()
@@ -1576,30 +1864,52 @@ def editer_ahadi(request, id):
     return render(request, 'ahadi/editer_souscription_ahadi.html', context)
 
 
+def editer_payement_ahadi(request, id):
+
+    try:
+        data = Payement_Offrande.objects.get(id=id, )
+        
+    except Payement_Offrande.DoesNotExist:
+        return render(request, '404.html', status=404)
+
+    
+    data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+    data_etat_counter = data_filtered.count()
+
+    data_filteredFalse = EtatBesoin.objects.filter(validation_pasteur=False)
+    data_etat_counter_P = data_filtered.count()
+
+
+    context = {
+        'payement': data,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
+        
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
+    }
+    return render(request, 'ahadi/editer_payement_ahadi.html', context)
+
+
+
 def modifier_ahadi_payement(request, id):
 
+    payement = get_object_or_404(Payement_Offrande, id=id)
+
     if request.method == 'POST':
-        
-        
-        nom_postnom = request.POST['nom_postnom']
-        montant = request.POST['montant']
-        
-        try:
-            
-            data = Ahadi.objects.get(id=id)
-            data.nom_postnom = nom_postnom
-            data.montant = montant
-            data.save()
-            
-            
-            return redirect('app:Liberation_ahadi')
+        departement = request.POST.get('departement')
+        montant = request.POST.get('montant')
+        motif = request.POST.get('motif')
 
-        except Ahadi.DoesNotExist:
-            
-            return redirect('app:Liberation_ahadi')  # Ou une autre action selon ton besoin
+        # Mise à jour
+        payement.departement = departement
+        payement.montant = montant
+        payement.motif = motif
+        payement.save()
 
-   
-    return redirect('app:Liberation_ahadi')
+        return redirect('app:Payement_ahadi_data')
+    return render(request, 'payement_offrande/editer_payement_ahadi.html', {'payement': payement})
+
     
 
 ####################### FIN Ahadi #########################
@@ -1650,6 +1960,180 @@ def recu_dataPage(request):
 
     page = 'rapport/recu_data.html'
     return render(request, page, context )
+
+################## ETAT DE BESOIN ###################
+
+@login_required
+def etatBsesionformulairePage(request):
+    
+    page = 'etat_besoin/etat_besoin.html'
+    
+    current_date = datetime.now()
+    
+    
+    formatted_date = current_date.strftime('%d-%m-%Y')
+    #formatted_anne = current_date.strftime('%Y')
+   
+    data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+    data_etat_counter = data_filtered.count()
+
+    data_filteredFalse = EtatBesoin.objects.filter(validation_pasteur=False)
+    data_etat_counter_P = data_filtered.count()
+
+
+    context = {
+        'data': formatted_date,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
+        
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
+    }
+    return render(request, page, context )
+
+
+@login_required
+def etatBsesionformulaireData(request):
+    
+    page = 'etat_besoin/etat_besoin_data.html'
+    
+    
+    data = EtatBesoin.objects.all()
+
+
+    paginator = Paginator(data, 6)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    start_index = page_obj.start_index()
+    for i, obj in enumerate(page_obj, start=start_index):
+        obj.numero_ordre = i 
+
+    data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+    data_etat_counter = data_filtered.count()
+
+    data_filteredFalse = EtatBesoin.objects.filter(validation_pasteur=False)
+    data_etat_counter_P = data_filteredFalse.count()
+
+    context = {
+        'data': page_obj,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
+    }
+    return render(request, page, context)
+
+
+
+@login_required
+def notificat_etat_besoinPage(request, id):
+
+
+    try:
+        data = EtatBesoin.objects.get(id=id)
+    except EtatBesoin.DoesNotExist:
+        messages.error(request, "Cette demande n'existe pas.")
+        return redirect("app:Etat_Besoin")  
+    
+    data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+    data_filtered_caisse = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+    data_etat_counter = data_filtered.count()
+
+    data_filteredFalse = EtatBesoin.objects.filter(validation_pasteur=False)
+    data_etat_counter_P = data_filteredFalse.count()
+
+    context = {
+        'data': data,
+        'data_etat_besoin_caisse': data_filtered_caisse,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
+    }
+
+    return render(request, 'etat_besoin/validation_pasteur.html', context)
+
+
+@login_required
+def soumettre_etat_besoin(request):
+    if request.method == 'POST':
+        
+        service = request.POST.get('service')
+        designation = request.POST.get('designation')
+        montant = request.POST.get('montant')
+        quantite = request.POST.get('quantite')
+        motif = request.POST.get('motif')
+        date_etat_besoin = request.POST.get('date_etat_besoin')
+        
+        
+        try:
+            montant = Decimal(montant)
+        except (ValueError,):
+            message_erreur = "Le montant n'est pas valide."
+            context = {'message_erreur': message_erreur}
+            return render(request, 'etat_besoin/etat_besoin_form.html', context)
+        
+        
+        try:
+            date_etat_besoin = datetime.strptime(date_etat_besoin, '%d-%m-%Y').date()
+        except ValueError:
+            message_erreur = "La date de l'état de besoin n'est pas valide."
+            context = {'message_erreur': message_erreur}
+            return render(request, 'etat_besoin/etat_besoin.html', context)
+    
+        try:
+            etat_besoin = EtatBesoin(
+                service=service,
+                montant=montant,
+                designation=designation,
+                quantite=quantite,
+                motif=motif,
+                date_etat_besoin=date_etat_besoin,
+                validation_pasteur=False, 
+                validation_caisse=False,  
+            )
+            
+            etat_besoin.save()
+            #message_succes = "L'état de besoin a été créé avec succès !"
+            #context = {'message_succes': message_succes}
+            return redirect('app:Etat_Besoin_Data')
+        
+        except Exception as e:
+            message_erreur = f"Une erreur est survenue : {e}"
+            context = {'message_erreur': message_erreur}
+            return render(request, 'etat_besoin/etat_besoin.html', context)
+    
+    else:
+        
+        return render(request, 'etat_besoin/etat_besoin.html')
+    
+
+def valider_etatBesoin(request, id):
+
+    if request.method == 'POST':
+        
+        
+        validation_pasteur = request.POST['validation_pasteur']
+        #commentaire_pasteur = request.POST['commentaire_pasteur']
+        
+        try:
+            
+            data = EtatBesoin.objects.get(id=id)
+            data.validation_pasteur = validation_pasteur
+        
+            data.save()
+            
+            
+            return redirect('app:Etat_Besoin_Data')
+
+        except EtatBesoin.DoesNotExist:
+            
+            return redirect('app:Etat_Besoin_Data')
+
+   
+    return redirect('app:Etat_Besoin_Data')
+    
 
 
 #################### RAPPORT PDF ##########################
@@ -1842,9 +2326,26 @@ def recu_pdf(request,pdf_id):
 
 @login_required
 def bilan(request):
-    # Regrouper les prévisions par groupe + année avec la somme des montants
+    from django.db.models import Q
+
+    query = request.GET.get('q', '').strip().lower()
+
+    prevision_qs = Prevoir.objects.select_related('descript_prevision')
+    paiement_qs = Payement_Offrande.objects.select_related('nom_offrande')
+
+    if query:
+        prevision_qs = prevision_qs.filter(
+            Q(nom_prevision__icontains=query) |
+            Q(annee_prevus__icontains=query)
+        )
+
+        paiement_qs = paiement_qs.filter(
+            Q(nom_offrande__nom_offrande__icontains=query) |
+            Q(date_payement__icontains=query)
+        )
+
     grouped = (
-        Prevoir.objects
+        prevision_qs
         .values(
             'descript_prevision__num_ordre',
             'descript_prevision__description_prevision',
@@ -1854,46 +2355,110 @@ def bilan(request):
         .order_by('descript_prevision__num_ordre', 'annee_prevus')
     )
 
-    # Précharger les objets liés pour éviter les requêtes multiples dans la boucle
-    data_2 = Prevoir.objects.select_related('descript_prevision').all()
-
     combined_data = []
     for group in grouped:
-        related_data = data_2.filter(
-            descript_prevision__num_ordre=group['descript_prevision__num_ordre'],
-            annee_prevus=group['annee_prevus']
+        num_ordre = group['descript_prevision__num_ordre']
+        annee = group['annee_prevus']
+
+        related_data = prevision_qs.filter(
+            descript_prevision__num_ordre=num_ordre,
+            annee_prevus=annee
+        ).values('nom_prevision', 'num_compte', 'montant_prevus')
+
+        pay_qs_filtered = paiement_qs.filter(
+            nom_offrande__descript_recette__num_ordre=num_ordre,
+            annee=annee
         )
+
+        pay_grouped = pay_qs_filtered.values(
+            'nom_offrande__num_compte',
+            'nom_offrande__nom_offrande'
+        ).annotate(
+            total_recette=Sum('montant', filter=Q(type_payement='Entree')),
+            total_depense=Sum('montant', filter=Q(type_payement='Sortie')),
+        )
+
+        prevision_list = [{
+            'libelle': item['nom_prevision'],
+            'num_compte': item['num_compte'],
+            'recette': '-',
+            'depense': '-',
+            'prevision': item['montant_prevus'],
+        } for item in related_data]
+
+        paiement_list = [{
+            'libelle': item['nom_offrande__nom_offrande'],
+            'num_compte': item['nom_offrande__num_compte'],
+            'recette': item['total_recette'] or '-',
+            'depense': item['total_depense'] or '-',
+            'prevision': '-',
+        } for item in pay_grouped]
+
+        lignes_fusionnees = prevision_list + paiement_list
+
+        total_recettes = sum(
+            [p['recette'] if p['recette'] != '-' else 0 for p in paiement_list], Decimal(0)
+        )
+        total_depenses = sum(
+            [p['depense'] if p['depense'] != '-' else 0 for p in paiement_list], Decimal(0)
+        )
+
         combined_data.append({
-            'num_ordre': group['descript_prevision__num_ordre'],
+            'num_ordre': num_ordre,
             'description_prevision': group['descript_prevision__description_prevision'],
-            'annee_prevus': group['annee_prevus'],
-            'total_prevus': group['total_prevus'],
-            'related_data': related_data
+            'annee_prevus': annee,
+            'total_prevus': group['total_prevus'] or 0,
+            'total_recettes': total_recettes,
+            'total_depenses': total_depenses,
+            'lignes': lignes_fusionnees
         })
 
-    # Paginer les résultats (1 par page ici, tu peux ajuster selon les besoins)
-    paginator = Paginator(combined_data, 1)
+    paginator = Paginator(combined_data, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Ajouter un numéro d'ordre visible pour chaque élément paginé
-    # Ajouter le numéro d'ordre global
-    start_index = page_obj.start_index()  # Le premier index de cette page (ex. 11 si on est page 2 avec 10 par page)
+    for i, item in enumerate(page_obj, start=page_obj.start_index()):
+        item['numero_ordre'] = i
 
-    for index, item in enumerate(page_obj.object_list, start=start_index):
-        item['numero_ordre'] = index
+    data_filtered = EtatBesoin.objects.filter(validation_pasteur=True)
+    data_etat_counter = data_filtered.count()
+
+    data_filteredFalse = EtatBesoin.objects.filter(validation_pasteur=False)
+    data_etat_counter_P = data_filteredFalse.count()
 
     context = {
-        'data': page_obj
+        'data': page_obj,
+        'search_query': query,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
+        
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
     }
 
     return render(request, 'rapport/bilan.html', context)
 
-
 def livre_de_caisse(request):
 
     #data = Payement_Offrande.objects.all()
+    
+
+    search_query = request.GET.get('q', '').strip()
+
+    
+    #data = Payement_Offrande.objects.exclude(nom_offrande__descript_recette__description_recette="Engagement des adhérents")
+
     data_queryset = Payement_Offrande.objects.all().order_by('nom_offrande')
+    
+    if search_query:
+        
+        mots = search_query.split()
+        query = Q()
+        for mot in mots:
+            query &= Q(date_payement__icontains=mot)
+
+        data_queryset = data_queryset.filter(query)
+
 
     # Calcul des sommes cumulées
     cumulative_sums = []
@@ -1919,8 +2484,18 @@ def livre_de_caisse(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    data_filtered = EtatBesoin.objects.filter(validation_pasteur=True, validation_caisse=False)
+    data_etat_counter = data_filtered.count()
+
+    data_filteredFalse = EtatBesoin.objects.filter(validation_pasteur=False)
+    data_etat_counter_P = data_filteredFalse.count()
+
     context = {
-        'data': page_obj  # Contient des dicts avec 'op' et 'cumulative_sum'
+        'data': page_obj,
+        'data_etat_count_C': data_etat_counter,
+        'data_etat_besoin_true': data_filtered,
+        'data_etat_besoin_false': data_filteredFalse,
+        'data_etat_count_P': data_etat_counter_P,
     }
 
     return render(request, 'rapport/livre_caisse.html', context)

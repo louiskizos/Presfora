@@ -19,6 +19,21 @@
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Donnees</h6>
         </div>
+        <div>
+            <br>
+        </div>
+        <form method="get" action="{% url 'app:Bilan' %}"
+                        class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
+                        <div class="input-group">
+                            <input  type="text" name="q" class="form-control bg-light border-0 small" placeholder="Recherche par mois ou annee"
+                                aria-label="Search" aria-describedby="basic-addon2" value="{{ search_query }}">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-search fa-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+             </form>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
@@ -27,8 +42,10 @@
                            <!-- <th>Numero d'ordre</th> -->
                            <tr>
                             <th>N°</th>
-                            <th>LES OFFRANDES / LES ENGAGEMENTS DES ADHERENTS</th>
-                            <th>Numéro de compte</th>
+                            <th>LIBELLE</th>
+                            <th>NUMERO DE COMPTE</th>
+                            <th>RECETTE</th>
+                            <th>DEPENSE</th>
                             <th>PREVISION</th>
                             
                         </tr>
@@ -42,27 +59,26 @@
                                 <tr style="background-color: #f0f8ff; font-weight: bold;">
                                     <td>-</td>
                                     <td>{{ bloc.description_prevision }}</td>
-                                    <td>{{ bloc.num_ordre }}</td>
+                                    <td> {{ bloc.num_ordre }}</td>
+                                    <td>Sous-total {{ bloc.total_recettes }}</td>
+                                    <td>Sous-total {{ bloc.total_depenses }}</td>
                                     <td>Sous-total {{ bloc.total_prevus }}</td>
                                     
-                                    
-                                </tr>
-                                
-                    
-                                <!-- Détails ligne par ligne -->
-                                {% for item in bloc.related_data %}
+                                    {% for ligne in bloc.lignes %}
                                     <tr>
                                         <td>-</td>
-                                        <td>{{ item.nom_prevision }}</td>
-                                        <td>{{ item.num_compte }}</td>
-                                        <td>{{ item.montant_prevus }}</td>
-                                        
-                                        
+                                        <td>{{ ligne.libelle }}</td>
+                                        <td>{{ ligne.num_compte }}</td>
+                                        <td>{{ ligne.recette }}</td>
+                                        <td>{{ ligne.depense }}</td>
+                                        <td>{{ ligne.prevision }}</td>
                                     </tr>
-                                 
                                     
-                                {% endfor %}
-                            {% empty %}
+                                    {% endfor %}
+
+
+
+                                    {% empty %}
                                 <tr><td colspan="6">Aucune donnée trouvée.</td></tr>
                             {% endfor %}
                         </tbody>

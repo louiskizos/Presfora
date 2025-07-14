@@ -8,11 +8,11 @@
 
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Table de sorte des offrandes</h1>
+        <h1 class="h3 mb-0 text-gray-800">Table des recus</h1>
         
     </div>
 
-    <p class="mb-4">Ce tableau contient la liste de toute les payements faitent a l'eglise CBCA Katoyi </p>
+    <p class="mb-4">Ce tableau contient toutes le preuve de payements fait a l'eglise CBCA Katoyi </p>
 
     <!-- DataTales Example -->
     <div class="card shadow mb-4">
@@ -22,7 +22,7 @@
         <div>
             <br>
         </div>
-        <form method="get" action="{% url 'app:Liberation_ahadi' %}"
+        <form method="get" action="{% url 'app:Recu_data' %}"
                         class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
                         <div class="input-group">
                             <input  type="text" name="q" class="form-control bg-light border-0 small" placeholder="Recherche..."
@@ -35,21 +35,17 @@
                         </div>
              </form>
         <div class="card-body">
-          
-
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
                            <!-- <th>Numero d'ordre</th> -->
-                            <th>Numero du compte</th>
-                            <th>Nom & Post-Nom</th>
-                            <th>Nom d'offrande</th>
-                            <th>Montant souscrit</th>
-                            <th>Montant payer</th>
-                            <th>Reste</th>
-                            <th>Date de payement</th>
-                            {% if user.username == "Comptable" or user.username == "comptable" %}
+                            <th>Designation</th>
+                            <th>Montant</th>
+                            <th>Quantite</th>
+                            <th>Validation</th>
+                            <th>Date</th>
+                            {% if user.username == "Comptable" or user.username == "comptable" or user.username == "COMPTABLE"%}
                                     <th>Actions</th>
                             {% endif %}
                         </tr>
@@ -57,26 +53,34 @@
                     <tbody>
                         {% for i in data %}
                         <tr>
-                            <td>{{ i.nom_offrande.num_compte }}</td>
-                            <td>{{ i.nom_postnom }}</td>
-                            <td>{{ i.nom_offrande.nom_offrande }}</td>
+                    
+                            <td>{{ i.designation }}</td>
                             <td>{{ i.montant }}</td>
-                            <td>{{ i.total_paye|default:"0.00" }}</td>
-                            <td>{{ i.reste|floatformat:2 }}</td>
-                            <td>{{ i.date_ahadi }}</td>
-                            {% if user.username == "Comptable" or user.username == "comptable" %}
-                                        <td>
-                                            <div class="row">
-                                                <!-- Lien pour modifier, en s'assurant que l'URL de modification contient l'ID -->
-                                                <a class="nav-link" href="Modifier_ahadi_souscrit/{{i.id}}">
-                                                    <i class="">Modifier</i>
-                                                </a>
-                                                <!-- Lien pour supprimer, en s'assurant que l'URL de suppression contient l'ID -->
-                                                <a class="nav-link" href="#">
-                                                    <i class="small text-xs font-weight-bold text-danger">Supprimer</i>
-                                                </a>
-                                            </div>
-                                        </td>
+                            <td>{{ i.quantite}}</td>
+                            <td>
+                                {% if i.validation_pasteur == True %}
+                                     Accorder
+                                {% else %}
+                                    Non accorder
+                                {% endif %}
+                            </td>
+                            <td>{{ i.date_etat_besoin }}</td>
+                            {% if user.username == "Comptable" or user.username == "comptable" or user.username == "COMPTABLE"%}
+                            <td>
+                                <div class="row">
+                                    <!-- Lien pour modifier, en s'assurant que l'URL de modification contient l'ID -->
+                                    <a class="nav-link" href="">
+                                        <i class="">Modifier</i>
+                                    </a>
+                                    <a class="nav-link" href="Recu/{{i.id}}">
+                                        <i class="">Imprimer</i>
+                                    </a>
+                                    <!-- Lien pour supprimer, en s'assurant que l'URL de suppression contient l'ID -->
+                                    <a class="nav-link" href="#">
+                                        <i class="small text-xs font-weight-bold text-danger">Supprimer</i>
+                                    </a>
+                                </div>
+                            </td>
                             {% endif %}
                         </tr>
                         {% endfor %}
@@ -84,7 +88,12 @@
                     
    
                 </table>
-                
+                {% if message_succes %}
+                                &#x2714; <i class="small text-xs font-weight-normal text-success" >{{message_succes}}</i>    
+                                {% endif %}
+                                {% if message_erreur %}
+                                &#x274C; <i class="small text-xs font-weight-normal text-danger" >{{message_erreur}}</i>
+                {% endif %} 
                 <nav aria-label="Page navigation example">
                     <ul class="pagination justify-content-end">
                         <li class="page-item ">

@@ -103,6 +103,7 @@
                     data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <h6 class="collapse-header">Sorte des previsions :</h6>
+                        <a class="collapse-item" href="{% url 'app:Etat_Besoin' %}">Etat de besoin</a>
                         
                         <a class="collapse-item" href="{% url 'app:Prevoir' %}">Prevoir</a>
                     </div>
@@ -159,13 +160,48 @@
                         <a class="collapse-item" href="{% url 'app:Depense_data'%}">depense</a>
                         
                         
-                        <a class="collapse-item" href="{% url 'app:Depense_data'%}">Bon de sortie</a>
+                        <a class="collapse-item" href="{% url 'app:Sortie_data'%}">Bon de sortie</a>
                     </div>
                 </div>
             </li>
             {% endif %}
             <!-- Nav Item - Utilities Collapse Menu -->
             
+
+            {% if user.username == "Pasteur" or user.username == "pasteur" or user.username == "PASTEUR" %}
+            
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages"
+                    aria-expanded="true" aria-controls="collapsePages">
+                    <i class="fas fa-fw fa-folder"></i>
+                    <span>Ahadi</span>
+                </a>
+                <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <h6 class="collapse-header">Details :</h6>
+                        <a class="collapse-item" href="{% url 'app:Liberation_ahadi'%}">Liberation Ahadi</a>
+                        
+                    </div>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUtilities"
+                    aria-expanded="true" aria-controls="collapseUtilities">
+                    <i class="fas fa-fw fa-wrench"></i>
+                    <span>Depenses</span>
+                </a>
+                <div id="collapseUtilities" class="collapse" aria-labelledby="headingUtilities"
+                    data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <h6 class="collapse-header">Details :</h6>
+                        <a class="collapse-item" href="#">depense</a>
+                        
+                        
+                        <a class="collapse-item" href="{% url 'app:Etat_Besoin_Data'%}">Etat de besoin</a>
+                    </div>
+                </div>
+            </li>
+            {% endif %}
 
             <!-- Divider -->
             <hr class="sidebar-divider">
@@ -192,6 +228,15 @@
             </li>
             {% endif %}
 
+            {% if user.username == "Pasteur" or user.username == "pasteur" or user.username == "PASTEUR" %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'app:Bilan' %}">
+                    <i class="fas fa-fw fa-chart-area"></i>
+                    <span>Bilan</span></a>
+            </li>
+
+            {% endif %}
+
             {% if user.username == "Caissiere" or user.username == "caissiere" or user.username == "Caissier" or user.username == "caissier" %}
             <li class="nav-item">
                 <a class="nav-link"  href="{% url 'app:Payement_Offrande_Data'%}">
@@ -211,6 +256,29 @@
                     
             </li>
             {% endif %}
+
+
+            
+            {% if user.username == "Pasteur" or user.username == "Pasteur" %}
+            <li class="nav-item">
+                <a class="nav-link"  href="{% url 'app:Payement_Offrande_Data'%}">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>Liste des payements</span></a>
+                    
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'app:Sortie_data'%}">
+                    <i class="fas fa-fw fa-chart-area"></i>
+                    <span>Liste des depenses</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link"  href="{% url 'app:Livre_Caisse'%}">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>Livre de caisse</span></a>
+                    
+            </li>
+            {% endif %}
+
             <!-- Divider -->
             <hr class="sidebar-divider d-none d-md-block">
 
@@ -275,48 +343,76 @@
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fas fa-bell fa-fw"></i>
                                 <!-- Counter - Alerts -->
-                                <span class="badge badge-danger badge-counter">3+</span>
+                                {% if user.username == "Caissiere" or user.username == "caissiere" or user.username == "Caissier" or user.username == "caissier" %}
+                                        {% if data_etat_count_C != 0 %}
+                                                <span class="badge badge-danger badge-counter">+{{data_etat_count_C}}</span>
+                                        {% endif %}
+                                
+                                {% elif user.username == "Pasteur" or user.username == "pasteur" %}
+                                        {% if data_etat_count_P != 0 %}
+                                                <span class="badge badge-danger badge-counter">+{{data_etat_count_P}}</span>
+                                        {% endif %}
+                                {% endif %}
                             </a>
                             <!-- Dropdown - Alerts -->
                             <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                 aria-labelledby="alertsDropdown">
                                 <h6 class="dropdown-header">
-                                    Notification d'etat de sortie
-                                </h6>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="mr-3">
-                                        <div class="icon-circle bg-primary">
-                                            <i class="fas fa-file-alt text-white"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="small text-gray-500">December 12, 2019</div>
-                                        <span class="font-weight-bold">A new monthly report is ready to download!</span>
-                                    </div>
-                                </a>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="mr-3">
-                                        <div class="icon-circle bg-success">
-                                            <i class="fas fa-donate text-white"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="small text-gray-500">December 7, 2019</div>
-                                        $290.29 has been deposited into your account!
-                                    </div>
-                                </a>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="mr-3">
-                                        <div class="icon-circle bg-warning">
-                                            <i class="fas fa-exclamation-triangle text-white"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="small text-gray-500">December 2, 2019</div>
-                                        Spending Alert: We've noticed unusually high spending for your account.
-                                    </div>
-                                </a>
-                                <a class="dropdown-item text-center small text-gray-500" href="#">Show All Alerts</a>
+                                    {% if data_etat_count_C != 0  or data_etat_count_P != 0 %}
+                                            Notifications
+                                    {% else %}
+                                            
+                                            Pas de notification
+                                    {% endif %}
+
+                                    
+                                </h6>{% if user.username == "Caissiere" or user.username == "caissiere" or user.username == "Caissier" or user.username == "caissier" %}
+    {% if data_etat_count_C != 0 %}
+        {% for etat_not in data_etat_besoin_true %}
+            <!-- Formulaire pour envoyer l'ID via POST -->
+            <form method="POST" action="{% url 'app:Depense_data' %}">
+                {% csrf_token %}
+                <input type="hidden" name="etat_not_id" value="{{ etat_not.id }}">
+                <a class="dropdown-item d-flex align-items-center" href="javascript:void(0);" onclick="this.closest('form').submit();">
+                    <div class="mr-3">
+                        <div class="icon-circle bg-primary">
+                            <i class="fas fa-donate text-white"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="small text-gray-500">{{ etat_not.date_etat_besoin }}</div>
+                        ${{ etat_not.montant }} <div class="small text-gray-500">{{ etat_not.commentaire_pasteur }}</div>
+                    </div>
+                </a>
+            </form>
+        {% endfor %}
+        <a class="dropdown-item text-center small text-gray-500" href="#">Toute les notification</a>
+    {% endif %}
+{% elif user.username == "Pasteur" or user.username == "pasteur" %}
+    {% if data_etat_count_P != 0 %}
+        {% for etat_not in data_etat_besoin_false %}
+            <!-- Formulaire pour envoyer l'ID via POST -->
+            <form method="POST" action="{% url 'app:Notification_Etat_Besoin' etat_not.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="etat_not_id" value="{{ etat_not.id }}">
+                <a class="dropdown-item d-flex align-items-center" href="javascript:void(0);" onclick="this.closest('form').submit();">
+                    <div class="mr-3">
+                        <div class="icon-circle bg-primary">
+                            <i class="fas fa-donate text-white"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="small text-gray-500">{{ etat_not.date_etat_besoin }}</div>
+                        {{etat_not.service}} <div class="small text-gray-500">{{ etat_not.motif }}, ${{ etat_not.montant }}</div>
+                    </div>
+                </a>
+            </form>
+        {% endfor %}
+        <a class="dropdown-item text-center small text-gray-500" href="#">Toute les notification</a>
+    {% endif %}
+{% endif %}
+
+                                
                             </div>
                         </li>
 
@@ -424,7 +520,7 @@
 
                 </nav>
                 <!-- End of Topbar -->
-                {% if user.username == "Caissiere" or user.username == "caissiere" or user.username == "Caissier" or user.username == "caissier" or user.username == "Comptable" or user.username == "comptable" %}
+                {% if user.username == "Caissiere" or user.username == "caissiere" or user.username == "Caissier" or user.username == "caissier" or user.username == "Comptable" or user.username == "comptable" or user.username == "PASTEUR" or user.username == "Pasteur" or user.username == "pasteur"%}
                 <!-- Begin Page Content -->
                     {% block content %}
     

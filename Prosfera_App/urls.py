@@ -55,11 +55,11 @@ urlpatterns = [
     path('Modifier_payement/<uuid:id>/', editer_payement, name='Modifier_payement'),
     path('Modification_payement/<uuid:id>/', modification_payement, name='Modification_payement'),
     ################ Depense   #########################
-    path('Formulaire_Depense/<uuid:id>/', depensePage, name='Depense'),
+    path('Formulaire_Depense/<int:solde>/', depensePage, name='Formulaire_Depense'),
     path('Decaisser', depenser, name='Decaisser'),
     path('Depense_data', depense_data, name='Depense_data'),
     path('Sortie_data', Sortie_Data, name='Sortie_data'),
-    
+    path('Editer_depense/<uuid:id>/', editer_depense, name='Editer_depense'),
     ################ AHADI   ##########################
     path('Souscrire_Ahadi', souscrire_ahadi_Page, name='Souscrire_Ahadi'),
     path('Payement_Ahadi', payement_ahadi_Page, name='Payement_Ahadi'),
@@ -70,8 +70,19 @@ urlpatterns = [
     path('Payement_ahadi', payement_ahadi, name='Payement_ahadi'),
     path('Payement_ahadi_data', data_payement_ahadi, name='Payement_ahadi_data'),
     path('Liberation_ahadi', liberation_ahadi, name='Liberation_ahadi'),
-    path('Modifier_payement_ahadi/<uuid:id>/', editer_ahadi, name='Modifier_payement_ahadi'),
+    path('Modifier_ahadi_souscrit/<uuid:id>/', editer_souscription_ahadi, name='Modifier_ahadi_souscrit'),
     path('Modifier_souscription_ahadi/<uuid:id>/', modifier_ahadi_payement, name='Modifier_souscription_ahadi'),
+    path('Modifier_payement_ahadi/<uuid:id>/', editer_payement_ahadi, name='Modifier_payement_ahadi'),
+    path('Modifier_ahadi_payement/<uuid:id>/', modifier_ahadi_payement, name='Modifier_ahadi_payement'),
+
+    ############## Etat de Besoin ####################
+    path('Etat_Besoin', etatBsesionformulairePage, name='Etat_Besoin'),
+    path('Soumettre_Etat_Besoin', soumettre_etat_besoin, name='Soumettre_Etat_Besoin'),
+    #path('Notification_Etat_Besoin/<uuid:id>/', notificat_etat_besoinPage, name='Notification_Etat_Besoin'),
+    path('Notification_Etat_Besoin/<uuid:id>/', notificat_etat_besoinPage, name='Notification_Etat_Besoin'),
+
+    path('Valider_Etat_Besoin/<uuid:id>/', valider_etatBesoin, name='Valider_Etat_Besoin'),
+    path('Etat_Besoin_Data', etatBsesionformulaireData, name='Etat_Besoin_Data'),
     ############## Recu #########################
     path('Recu/<uuid:id>/', recuPage, name='Recu'),
     path('Recu_ahadi/<uuid:id>/', recuPage, name='Recu'),

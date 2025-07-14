@@ -51,6 +51,20 @@ class Ahadi(models.Model):
     motif = models.CharField(max_length=255)
     date_ahadi = models.DateField()
     annee = models.IntegerField()
+
+
+
+# class dime(models.Model):
+    
+#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+#     nom_offrande = models.ForeignKey(Sorte_Offrande, on_delete=models.CASCADE)
+#     nom_postnom = models.CharField(max_length=100)
+#     chapelle = models.CharField(max_length=100)
+#     montant = models.DecimalField(max_digits=15, decimal_places=2)
+#     montant_lettre = models.CharField(max_length=255)
+#     motif = models.CharField(max_length=255)
+#     date_ahadi = models.DateField()
+#     annee = models.IntegerField()
   
     
 # class Depense(models.Model):
@@ -64,7 +78,52 @@ class Ahadi(models.Model):
 #     motif = models.CharField(max_length=255)
 #     date_sortie = models.DateField()
 #     annee = models.IntegerField()
- 
+
+#Church est la classe qui represente l'entitee
+# class Church(models.Model):
+#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+#     name = models.CharField(max_length=100)
+#     ville = models.CharField(max_length=100)
+#     province = models.CharField(max_length=100)
+#     # region = models.CharField(max_length=100)
+#     contact_email = models.CharField(max_length=100,null=True)
+#     pastor_name = models.CharField(max_length=100)
+#     created_at = models.DateTimeField(auto_now_add=True)
+
+#     def __str__(self):
+#         return super().__str__()
+
+
+# # User ou Client 
+# class CustomUser(models.Model):
+#     names = models.TextField()
+#     email = models.CharField(max_length=100)
+#     password = models.CharField(max_length=100)
+#     role = models.CharField(max_length=50) #Admin, 			#comptable,caissier,Pasteur,Secretaire.
+#     church =  models.ForeignKey(Church,on_delete=models.CASCADE)
+
+
+
+class EtatBesoin(models.Model):
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    service = models.CharField(max_length=100)
+    designation = models.CharField(max_length=255, default="Aucune désignation")
+    montant = models.DecimalField(max_digits=10, decimal_places=2)
+    quantite = models.CharField(max_length=100)
+    motif = models.TextField()
+    date_etat_besoin = models.DateField(auto_now_add=True)
+    validation_pasteur = models.BooleanField(default=False)
+    #commentaire_pasteur = models.TextField()
+    validation_caisse = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.service
+
+
+
+
+
 class Groupe_Previsions(models.Model):
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

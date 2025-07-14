@@ -8,7 +8,7 @@ fetch('http://127.0.0.1:8000/api/presfora_data_pourcentage/')
             data: {
               labels: ["Solde", "Depense", "Prevision"],
               datasets: [{
-                data: [data.pourcentage_solde, data.pourcentage_depense, data.pourcentage_prevision],
+                data: [data.pourcentage_sold, data.pourcentage_depense, data.pourcentage_prevision],
                 backgroundColor: ['#4e73df', '#e74a3b', '#858796'],
                 hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
                 hoverBorderColor: "rgba(234, 236, 244, 1)",

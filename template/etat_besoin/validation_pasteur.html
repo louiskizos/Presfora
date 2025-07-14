@@ -1,0 +1,74 @@
+
+{% extends 'index.html'%}
+{% block content %}
+{%load static%}   
+
+<div class="container-fluid">
+    
+    <!-- Outer Row -->
+    <div class="row justify-content-center">
+        
+        <div class="col-xl-10 col-lg-12 col-md-9">
+
+            <div class="card o-hidden border-0 shadow-lg my-5">
+                <div class="card-body p-0">
+                    
+                    <!-- Nested Row within Card Body -->
+                    <div class="row">
+                        <div class="col-lg-3 d-none d-lg-block bg-login-image">
+                    
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="p-5">
+                                <div class="text-center">
+                                    <h1 class="h4 text-gray-900 mb-4">Validation etat de besion</h1>
+                                    
+                                </div>
+                                <form class="user" method="post" action="{% url 'app:Valider_Etat_Besoin' data.id %}">
+                                    {% csrf_token %}
+                                    
+
+
+                                    <div class="form-group">
+                                        
+                                        <input type="radio" name="validation_pasteur" value="True" id="id_validation_pasteur_oui" required>
+                                        <label for="id_validation_pasteur_oui">Oui</label>
+                                        <label>  /  </label>
+                                        <input type="radio" name="validation_pasteur" value="False" id="id_validation_pasteur_non" required>
+                                        <label for="id_validation_pasteur_non">Non</label>
+                                    </div>
+
+                                   <div class="form-group">
+                                        <textarea class="form-control" name="commentaire_pasteur" rows="4" 
+                                                placeholder="Entrez le motif de l'état de besoin" required>
+                                        </textarea>
+                                    </div>
+                                                                   
+                                    <div class="single-form">
+                                        <button class="btn btn-primary btn-block" type="submit">Valider</button>
+                                    </div>
+                                    
+                               </form>
+                               <hr>
+                               <div class="text-center">
+                                {% if message_succes %}
+                                &#x2714; <i class="small text-xs font-weight-normal text-success" >{{message_succes}}</i>    
+                                {% endif %}
+                                {% if message_erreur %}
+                                &#x274C; <i class="small text-xs font-weight-normal text-danger" >{{message_erreur}}</i>
+                                {% endif %}  
+                                   
+                               </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

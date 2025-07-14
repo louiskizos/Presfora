@@ -4,12 +4,7 @@
 {%load static%}   
 
 <div class="container-fluid">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <a class="nav-link" href="{% url 'app:Data_offrande' %}">
-            <i class="fas fa-fw fa-database"></i>
-            <span>Voir les sorties</span></a>
-    </div>
-    
+ 
     <!-- Outer Row -->
     <div class="row justify-content-center">
         
@@ -35,7 +30,7 @@
                                     <div class="form-group">
                                         <input type="text" class="form-control"
                                             id="exampleInputEmail" name="nom_offrande"
-                                            placeholder="Nom de l'offrande..." value="{{data.id}}" hidden required>
+                                            placeholder="Nom de l'offrande..." value="{{data.nom_offrande_id}}" hidden required>
                                     </div>
                                     <div class="form-group">
                                         <input type="text" class="form-control"
@@ -49,6 +44,12 @@
                                             placeholder="Montant"  required>
                                     </div>
                                     
+                                    <div class="form-group">
+                                        <input type="number" class="form-control"
+                                            id="exampleInputEmail" name="solde"
+                                            value="{{ data.total_montant }}" hidden required>
+                                    </div>
+
                                     <div class="form-group">
                                         <input type="text" class="form-control"
                                             id="exampleInputEmail" name="motif"
@@ -65,7 +66,18 @@
                                             placeholder="Annee..." value="{{annee_paiement}}" hidden required>
                                     </div>
                                     
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="etat_not_id"
+                                            placeholder="Id" value="{{etat_not_id}}" hidden required>
+                                    </div>
                                     
+                                    
+                                    <div class="form-group">
+                                        <input type="text" class="form-control"
+                                            id="exampleInputEmail" name="etat_montant"
+                                            placeholder="Id" value="{{etat_obj.montant}}" required>
+                                    </div>
                                     <div class="single-form">
                                         <button class="btn btn-primary btn-block" type="submit">Decaisser</button>
                                     </div>
