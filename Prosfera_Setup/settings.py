@@ -89,16 +89,22 @@ WSGI_APPLICATION = 'Prosfera_Setup.wsgi.application'
 #     }
 # }
 
-import os
-import dj_database_url
 
 DATABASES = {
-    'default': dj_database_url.parse(
-        os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        ssl_require=True
-    )
+    'default': {
+        'ENGINE': config('DB_ENGINE'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT'),
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'OPTIONS': {
+            'sslmode': config('DB_SSLMODE'),
+        },
+    }
 }
+
+
 
 
 
