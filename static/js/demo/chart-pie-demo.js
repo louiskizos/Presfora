@@ -1,4 +1,4 @@
-fetch('http://127.0.0.1:8000/api/presfora_data_pourcentage/')
+fetch('https://prosphora.onrender.com/api/presfora_data_pourcentage/')
   .then(response => response.json())
   .then(data => {
 

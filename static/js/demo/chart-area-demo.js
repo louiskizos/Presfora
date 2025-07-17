@@ -1,4 +1,4 @@
-fetch('http://127.0.0.1:8000/api/presfora-data/')  // L'URL de votre API Django
+fetch('https://prosphora.onrender.com/api/presfora-data/')  // L'URL de votre API Django 
   .then(response => response.json())
   .then(data => {
 
